@@ -1,50 +1,111 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# SDD Editor Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Self-Contained & Portable
+The SDD Editor MUST be fully self-contained with zero external installation requirements beyond Python runtime. All dependencies are managed within the application. The editor MUST run identically on Windows, macOS, and Linux without platform-specific installations or configurations.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Python-First Architecture
+All core functionality built in Python with a modern GUI framework (candidates: PyQt6, PySide6, or Tkinter). Architecture separates concerns: Core logic → MCP integration layer → GUI layer. Each layer independently testable and loosely coupled.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. MCP Server Integration (NON-NEGOTIABLE)
+The editor MUST include a built-in Model Context Protocol (MCP) server supporting:
+- Jira integration (issue tracking, project management)
+- Database connectivity (query, schema inspection)
+- GitHub integration (repos, PRs, issues, workflows)
+- Git operations (commit, branch, merge, history)
+- Terminal execution (command running, output capture)
+- Chrome automation (web scraping, testing, screenshots)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+All integrations MUST be configurable, secure (credential management), and error-resilient.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### IV. CLI-GUI Parity
+Every CLI command MUST have a GUI equivalent. Users can accomplish all tasks through either interface. GUI provides visual workflows; CLI provides scriptability and automation. Both interfaces call the same underlying core services.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### V. AI-Assisted Speckit Generation
+GitHub Copilot (or compatible AI assistant) integration for generating speckit artifacts:
+- Constitution templates
+- Specification documents
+- Plan generation from specs
+- Task breakdown from plans
+- Implementation guidance
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+AI assistance MUST be optional, reviewable, and editable by users before commitment.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Technical Constraints
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Technology Stack
+- **Language**: Python 3.11+ (for modern type hints, performance)
+- **GUI Framework**: [TBD - PyQt6/PySide6 preferred for rich features, Tkinter acceptable for simplicity]
+- **MCP Implementation**: Python MCP SDK or custom implementation
+- **Dependency Management**: pip + requirements.txt or Poetry for reproducible builds
+- **Packaging**: PyInstaller or similar for standalone executables per platform
+
+### Cross-Platform Requirements
+- No platform-specific code in core logic (use abstraction layers)
+- File paths use `pathlib` for OS-agnostic handling
+- Process execution via `subprocess` with platform detection
+- GUI layouts must be responsive and adapt to different screen sizes/DPI settings
+
+### Security Standards
+- Credentials stored using OS keyring (Windows Credential Manager, macOS Keychain, Linux Secret Service)
+- No plaintext passwords in configs or logs
+- API tokens encrypted at rest
+- User consent required for external network calls
+
+### Performance Standards
+- Application startup < 3 seconds
+- GUI responsiveness maintained during long operations (async/threading)
+- Document loading/saving < 1 second for typical SDD files (< 10MB)
+- MCP operations timeout after 30 seconds with user notification
+
+## Development Workflow
+
+### Structure
+```
+sdd-editor/
+├── src/
+│   ├── core/          # Business logic (SDD parsing, validation)
+│   ├── mcp/           # MCP server and integrations
+│   ├── gui/           # GUI components and controllers
+│   ├── cli/           # CLI interface
+│   └── utils/         # Shared utilities
+├── tests/             # Unit and integration tests
+├── docs/              # Documentation
+├── .specify/          # Speckit configuration
+└── requirements.txt   # Dependencies
+```
+
+### Testing Requirements
+- Unit tests for all core logic (pytest)
+- Integration tests for MCP integrations (mock external services)
+- GUI tests using framework-specific tools (pytest-qt for Qt)
+- Minimum 80% code coverage for core modules
+- All tests must pass before commits to main branch
+
+### Version Control
+- Git-based workflow with feature branches
+- Commit messages follow Conventional Commits
+- PRs require passing tests and code review
+- Main branch always in releasable state
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### Decision Making
+- Core principles in this constitution are immutable unless critical technical blockers arise
+- Technology choices (GUI framework, specific libraries) subject to proof-of-concept validation
+- Breaking changes require migration guide and backward compatibility period
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### Amendment Process
+1. Proposal documented with rationale
+2. Team review and discussion
+3. Vote and approval
+4. Constitution updated with version bump
+5. All affected documentation updated
+
+### Compliance
+- All features must align with constitution principles
+- Trade-offs documented in architecture decision records (ADRs)
+- Regular architecture reviews to ensure compliance
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-18 | **Last Amended**: 2025-12-18
