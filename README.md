@@ -400,8 +400,10 @@ Changes create new template versions. Existing documents can be upgraded to new 
   - Document parsing: Sections, Requirements, frontmatter
   - Validation: DocumentValidator, ProjectValidator with error/warning tracking
   - Search: DocumentIndex with inverted index and requirement lookup
+  - Git integration: Repository detection, branch scanning, timestamp extraction
   - GUI: MainWindow with menus, tabs, status bar, PySide6 styling
-  - Tests: 29 unit tests covering all core functionality
+  - Tests: 128 tests (117 unit + 11 integration) with 91% coverage
+  - Coverage by module: project 92%, document 91%, search 90%, validator 90%, config 100%, logging 100%
 - 🔄 Next: Phase 3 (US1 - Document Editing MVP)
 
 ## Contributing
