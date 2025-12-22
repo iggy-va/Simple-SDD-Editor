@@ -142,6 +142,23 @@ class MainWindow(QMainWindow):
         find_action.triggered.connect(self._on_find)
         edit_menu.addAction(find_action)
         
+        # Window menu
+        window_menu = menubar.addMenu("&Window")
+        
+        # Next Tab
+        next_tab_action = QAction("Next &Tab", self)
+        next_tab_action.setShortcut(QKeySequence("Ctrl+Tab"))
+        next_tab_action.setStatusTip("Switch to next tab")
+        next_tab_action.triggered.connect(self._on_next_tab)
+        window_menu.addAction(next_tab_action)
+        
+        # Previous Tab
+        prev_tab_action = QAction("&Previous Tab", self)
+        prev_tab_action.setShortcut(QKeySequence("Ctrl+Shift+Tab"))
+        prev_tab_action.setStatusTip("Switch to previous tab")
+        prev_tab_action.triggered.connect(self._on_previous_tab)
+        window_menu.addAction(prev_tab_action)
+        
         # View menu
         view_menu = menubar.addMenu("&View")
         
@@ -198,6 +215,12 @@ class MainWindow(QMainWindow):
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.setMovable(True)
         self.tab_widget.tabCloseRequested.connect(self._on_tab_close_requested)
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
+        
+        # Add tab context menu
+        self.tab_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tab_widget.customContextMenuRequested.connect(self._show_tab_context_menu)
+        
         self.splitter.addWidget(self.tab_widget)
         
         # Set splitter sizes (20% navigator, 80% editor)
@@ -496,6 +519,10 @@ class MainWindow(QMainWindow):
         """Handle tab close request"""
         widget = self.tab_widget.widget(index)
         
+        # Save scroll position before potentially closing
+        if isinstance(widget, SpeckitEditorWidget):
+            widget.save_scroll_position()
+        
         # Check for unsaved changes
         if isinstance(widget, SpeckitEditorWidget) and widget.is_modified():
             reply = QMessageBox.question(
@@ -521,6 +548,74 @@ class MainWindow(QMainWindow):
         # Show welcome tab if no tabs left
         if self.tab_widget.count() == 0:
             self._show_welcome_tab()
+    
+    def _on_tab_changed(self, index: int) -> None:
+        """Handle tab change - restore scroll position and cursor"""
+        if index < 0:
+            return
+        
+        widget = self.tab_widget.widget(index)
+        if isinstance(widget, SpeckitEditorWidget):
+            widget.restore_scroll_position()
+            logger.debug(f"Switched to tab {index}: {widget.document_path}")
+    
+    def _on_next_tab(self) -> None:
+        """Switch to next tab (Ctrl+Tab)"""
+        current = self.tab_widget.currentIndex()
+        count = self.tab_widget.count()
+        if count > 0:
+            next_index = (current + 1) % count
+            self.tab_widget.setCurrentIndex(next_index)
+    
+    def _on_previous_tab(self) -> None:
+        """Switch to previous tab (Ctrl+Shift+Tab)"""
+        current = self.tab_widget.currentIndex()
+        count = self.tab_widget.count()
+        if count > 0:
+            prev_index = (current - 1) % count
+            self.tab_widget.setCurrentIndex(prev_index)
+    
+    def _show_tab_context_menu(self, position) -> None:
+        """Show context menu for tabs"""
+        from PySide6.QtWidgets import QMenu
+        
+        # Get tab bar position
+        tab_bar = self.tab_widget.tabBar()
+        index = tab_bar.tabAt(position)
+        
+        if index < 0:
+            return
+        
+        menu = QMenu(self)
+        
+        # Close actions
+        close_action = menu.addAction("Close")
+        close_others_action = menu.addAction("Close Others")
+        close_all_action = menu.addAction("Close All")
+        
+        action = menu.exec_(tab_bar.mapToGlobal(position))
+        
+        if action == close_action:
+            self._on_tab_close_requested(index)
+        elif action == close_others_action:
+            self._close_other_tabs(index)
+        elif action == close_all_action:
+            self._close_all_tabs()
+    
+    def _close_other_tabs(self, keep_index: int) -> None:
+        """Close all tabs except the specified one"""
+        # Close tabs after keep_index
+        for i in range(self.tab_widget.count() - 1, keep_index, -1):
+            self._on_tab_close_requested(i)
+        
+        # Close tabs before keep_index
+        for i in range(keep_index - 1, -1, -1):
+            self._on_tab_close_requested(i)
+    
+    def _close_all_tabs(self) -> None:
+        """Close all tabs"""
+        while self.tab_widget.count() > 0:
+            self._on_tab_close_requested(0)
     
     def _open_document_in_editor(self, document: SpeckitDocument) -> None:
         """Open a document in a new editor tab"""

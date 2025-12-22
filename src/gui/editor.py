@@ -178,6 +178,8 @@ class SpeckitEditorWidget(QTextEdit):
         self.document_path = None
         self.speckit_document = None
         self.validation_result: ValidationResult = None
+        self.saved_scroll_position = 0
+        self.saved_cursor_position = 0
         
         # Setup editor
         self._setup_editor()
@@ -316,6 +318,21 @@ class SpeckitEditorWidget(QTextEdit):
     def is_modified(self) -> bool:
         """Check if document has unsaved changes"""
         return self.document().isModified()
+    
+    def save_scroll_position(self) -> None:
+        """Save current scroll position and cursor location"""
+        self.saved_scroll_position = self.verticalScrollBar().value()
+        cursor = self.textCursor()
+        self.saved_cursor_position = cursor.position()
+        logger.debug(f"Saved position: scroll={self.saved_scroll_position}, cursor={self.saved_cursor_position}")
+    
+    def restore_scroll_position(self) -> None:
+        """Restore saved scroll position and cursor location"""
+        self.verticalScrollBar().setValue(self.saved_scroll_position)
+        cursor = self.textCursor()
+        cursor.setPosition(self.saved_cursor_position)
+        self.setTextCursor(cursor)
+        logger.debug(f"Restored position: scroll={self.saved_scroll_position}, cursor={self.saved_cursor_position}")
     
     def _on_text_changed(self) -> None:
         """Handle text changes"""

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QTreeView
 
 from ..core import SpeckitProject
@@ -142,6 +143,10 @@ class LazyProjectModel(QAbstractItemModel):
         if role == Qt.DisplayRole:
             return node.path.name
         
+        elif role == Qt.DecorationRole:
+            # Return icon based on file type
+            return self._get_icon_for_path(node.path)
+        
         elif role == Qt.ToolTipRole:
             # Show full path as tooltip
             if self.project:
@@ -155,6 +160,39 @@ class LazyProjectModel(QAbstractItemModel):
         elif role == Qt.UserRole:
             # Store full path for easy access
             return node.path
+        
+        return None
+    
+    def _get_icon_for_path(self, path: Path) -> Optional[QIcon]:
+        """Get icon for file/folder based on type"""
+        # Use Qt standard icons for simplicity
+        from PySide6.QtWidgets import QApplication, QStyle
+        
+        style = QApplication.style()
+        
+        if path.is_dir():
+            # Folder icons
+            if path.name == 'specs':
+                return style.standardIcon(QStyle.SP_DirIcon)
+            elif path.name == '.specify' or path.name.startswith('.'):
+                return style.standardIcon(QStyle.SP_DirClosedIcon)
+            else:
+                return style.standardIcon(QStyle.SP_DirIcon)
+        
+        else:
+            # File icons based on name
+            name_lower = path.name.lower()
+            
+            if name_lower == 'spec.md':
+                return style.standardIcon(QStyle.SP_FileDialogDetailedView)
+            elif name_lower == 'plan.md':
+                return style.standardIcon(QStyle.SP_FileDialogListView)
+            elif name_lower == 'tasks.md':
+                return style.standardIcon(QStyle.SP_FileDialogContentsView)
+            elif name_lower.endswith('.md'):
+                return style.standardIcon(QStyle.SP_FileIcon)
+            else:
+                return style.standardIcon(QStyle.SP_FileIcon)
         
         return None
     
