@@ -16,8 +16,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..core import SpeckitProject
+from ..core import SpeckitDocument, SpeckitProject
 from ..utils.logging import get_logger
+from .editor import SpeckitEditorWidget
+from .template_dialog import TemplateDialog
 
 logger = get_logger(__name__)
 
@@ -29,6 +31,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.project: Optional[SpeckitProject] = None
+        self.open_editors: dict[Path, SpeckitEditorWidget] = {}  # Track open editors
         
         self._setup_window()
         self._create_menus()
@@ -54,9 +57,16 @@ class MainWindow(QMainWindow):
         # File menu
         file_menu = menubar.addMenu("&File")
         
+        # New Document
+        new_doc_action = QAction("&New Document...", self)
+        new_doc_action.setShortcut(QKeySequence.New)
+        new_doc_action.setStatusTip("Create a new document from template")
+        new_doc_action.triggered.connect(self._on_new_document)
+        file_menu.addAction(new_doc_action)
+        
         # New Project
-        new_project_action = QAction("&New Project...", self)
-        new_project_action.setShortcut(QKeySequence.New)
+        new_project_action = QAction("New &Project...", self)
+        new_project_action.setShortcut(QKeySequence("Ctrl+Shift+N"))
         new_project_action.setStatusTip("Create a new Speckit project")
         new_project_action.triggered.connect(self._on_new_project)
         file_menu.addAction(new_project_action)
@@ -249,6 +259,51 @@ class MainWindow(QMainWindow):
             "New Project feature will be implemented in Phase 4 (US2)"
         )
     
+    def _on_new_document(self) -> None:
+        """Handle New Document from Template action"""
+        logger.info("New Document requested")
+        
+        if not self.project:
+            QMessageBox.warning(
+                self,
+                "No Project",
+                "Please open a project first before creating documents."
+            )
+            return
+        
+        # Show template dialog
+        templates_dir = self.project.root_path / ".specify" / "templates"
+        dialog = TemplateDialog(templates_dir, self)
+        
+        if dialog.exec() == TemplateDialog.Accepted:
+            template, values = dialog.get_result()
+            
+            if template:
+                try:
+                    # Instantiate template
+                    content = template.instantiate(values)
+                    
+                    # Create new document
+                    # For now, use a temporary path
+                    doc_path = self.project.root_path / "specs" / "new_document.md"
+                    
+                    doc = SpeckitDocument(
+                        path=doc_path,
+                        relative_path=Path("new_document.md"),
+                        content=content,
+                    )
+                    
+                    # Open in editor
+                    self._open_document_in_editor(doc)
+                    
+                except Exception as e:
+                    logger.error(f"Failed to create document: {e}")
+                    QMessageBox.critical(
+                        self,
+                        "Error",
+                        f"Failed to create document:\n{str(e)}"
+                    )
+    
     def _on_open_project(self) -> None:
         """Handle Open Project action"""
         logger.info("Open Project requested")
@@ -290,12 +345,64 @@ class MainWindow(QMainWindow):
     def _on_save(self) -> None:
         """Handle Save action"""
         logger.debug("Save requested")
-        # TODO: Implement in Phase 3 (US1)
+        
+        # Get current tab's editor
+        current_widget = self.tab_widget.currentWidget()
+        if isinstance(current_widget, SpeckitEditorWidget):
+            self._save_document(current_widget)
+        else:
+            logger.debug("No document to save")
     
     def _on_save_all(self) -> None:
         """Handle Save All action"""
         logger.debug("Save All requested")
-        # TODO: Implement in Phase 3 (US1)
+        
+        # Save all open editors
+        for i in range(self.tab_widget.count()):
+            widget = self.tab_widget.widget(i)
+            if isinstance(widget, SpeckitEditorWidget):
+                self._save_document(widget)
+    
+    def _save_document(self, editor: SpeckitEditorWidget) -> bool:
+        """Save a document from an editor widget"""
+        try:
+            if not editor.document_path:
+                logger.warning("Cannot save: no document path")
+                return False
+            
+            # Get content from editor
+            content = editor.get_content()
+            
+            # Update SpeckitDocument if available
+            if editor.speckit_document:
+                editor.speckit_document.content = content
+                editor.speckit_document.save()
+            else:
+                # Direct file write
+                editor.document_path.write_text(content, encoding="utf-8")
+            
+            # Reset modified flag
+            editor.document().setModified(False)
+            
+            # Update tab title (remove *)
+            for i in range(self.tab_widget.count()):
+                if self.tab_widget.widget(i) == editor:
+                    title = self.tab_widget.tabText(i).rstrip(" *")
+                    self.tab_widget.setTabText(i, title)
+                    break
+            
+            self.status_bar.showMessage(f"Saved: {editor.document_path.name}", 2000)
+            logger.info(f"Document saved: {editor.document_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save document: {e}")
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                f"Failed to save document:\n{str(e)}"
+            )
+            return False
     
     def _on_undo(self) -> None:
         """Handle Undo action"""
@@ -325,12 +432,74 @@ class MainWindow(QMainWindow):
     
     def _on_tab_close_requested(self, index: int) -> None:
         """Handle tab close request"""
-        # Don't allow closing the welcome tab if it's the only one
-        if self.tab_widget.count() == 1:
-            return
+        widget = self.tab_widget.widget(index)
         
+        # Check for unsaved changes
+        if isinstance(widget, SpeckitEditorWidget) and widget.is_modified():
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                f"Document has unsaved changes. Save before closing?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
+            )
+            
+            if reply == QMessageBox.Save:
+                if not self._save_document(widget):
+                    return  # Save failed, don't close
+            elif reply == QMessageBox.Cancel:
+                return  # User cancelled
+        
+        # Remove from tracking
+        if isinstance(widget, SpeckitEditorWidget) and widget.document_path:
+            self.open_editors.pop(widget.document_path, None)
+        
+        # Close tab
         self.tab_widget.removeTab(index)
         
         # Show welcome tab if no tabs left
         if self.tab_widget.count() == 0:
             self._show_welcome_tab()
+    
+    def _open_document_in_editor(self, document: SpeckitDocument) -> None:
+        """Open a document in a new editor tab"""
+        # Check if already open
+        if document.path in self.open_editors:
+            # Switch to existing tab
+            editor = self.open_editors[document.path]
+            for i in range(self.tab_widget.count()):
+                if self.tab_widget.widget(i) == editor:
+                    self.tab_widget.setCurrentIndex(i)
+                    return
+        
+        # Remove welcome tab if present
+        if self.tab_widget.count() == 1:
+            first_widget = self.tab_widget.widget(0)
+            if not isinstance(first_widget, SpeckitEditorWidget):
+                self.tab_widget.removeTab(0)
+        
+        # Create new editor
+        editor = SpeckitEditorWidget()
+        editor.load_document(document)
+        
+        # Connect signals
+        editor.contentModified.connect(lambda: self._on_editor_modified(editor))
+        
+        # Add to tab widget
+        tab_title = document.path.name
+        self.tab_widget.addTab(editor, tab_title)
+        self.tab_widget.setCurrentWidget(editor)
+        
+        # Track editor
+        self.open_editors[document.path] = editor
+        
+        logger.info(f"Opened document in editor: {document.path}")
+    
+    def _on_editor_modified(self, editor: SpeckitEditorWidget) -> None:
+        """Handle editor content modification"""
+        # Add * to tab title if modified
+        for i in range(self.tab_widget.count()):
+            if self.tab_widget.widget(i) == editor:
+                title = self.tab_widget.tabText(i)
+                if not title.endswith(" *"):
+                    self.tab_widget.setTabText(i, title + " *")
+                break

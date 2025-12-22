@@ -10,6 +10,7 @@ from .document import (
 )
 from .project import FeatureBranch, SpeckitProject
 from .search import DocumentIndex
+from .template import Template, TemplateManager, TemplateVariable
 from .validator import DocumentValidator, ProjectValidator, ValidationError, ValidationResult
 
 __all__ = [
@@ -25,6 +26,10 @@ __all__ = [
     "FeatureBranch",
     # Search
     "DocumentIndex",
+    # Templates
+    "Template",
+    "TemplateManager",
+    "TemplateVariable",
     # Validation
     "DocumentValidator",
     "ProjectValidator",
