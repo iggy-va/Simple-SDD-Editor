@@ -36,8 +36,8 @@ AI assistance MUST be optional, reviewable, and editable by users before commitm
 
 ### Technology Stack
 - **Language**: Python 3.11+ (for modern type hints, performance)
-- **GUI Framework**: [TBD - PyQt6/PySide6 preferred for rich features, Tkinter acceptable for simplicity]
-- **MCP Implementation**: Python MCP SDK or custom implementation
+- **GUI Framework**: PySide6 (Qt for Python, LGPL licensed)
+- **MCP Implementation**: Embedded Python module within editor process
 - **Dependency Management**: pip + requirements.txt or Poetry for reproducible builds
 - **Packaging**: PyInstaller or similar for standalone executables per platform
 

@@ -5,6 +5,13 @@
 **Status**: Draft  
 **Input**: User description: "Speckit Document Editor/IDE"
 
+## Clarifications
+
+### Session 2025-12-22
+
+- Q: Which Python GUI framework should the editor use? → A: PySide6 - Official Qt for Python, LGPL license, feature-rich, best for professional IDE
+- Q: Should the MCP server run as an embedded component within the editor or as a separate process/service? → A: Embedded - MCP server runs as Python module within the editor process, started/stopped automatically
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Create and Edit Specification Documents (Priority: P1)
@@ -142,7 +149,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-008**: System MUST integrate with git for version control operations (status, diff, commit, push, pull, branch)
 - **FR-009**: System MUST display git branch information and file change status visually
 - **FR-010**: System MUST provide visual diff viewer for comparing document versions
-- **FR-011**: System MUST support MCP server configuration for external integrations (Jira, GitHub, databases, terminals, Chrome)
+- **FR-011**: System MUST support embedded MCP server for external integrations (Jira, GitHub, databases, terminals, Chrome) running as a Python module within the editor process
 - **FR-012**: System MUST store MCP credentials securely using OS-native credential managers
 - **FR-013**: System MUST display connection status for all configured MCP integrations
 - **FR-014**: System MUST allow users to test MCP connections with immediate feedback
@@ -169,8 +176,20 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **Specification Document**: A structured markdown document following speckit template format with sections for user stories, requirements, success criteria. Links to feature branch and may reference external artifacts.
 - **Feature Branch**: Git branch associated with a specific feature number and short name, contains corresponding specs directory.
 - **Template**: Versioned markdown template defining required sections and structure for different document types (spec, plan, tasks, checklist).
-- **MCP Connection**: Configuration for external service integration including service type, endpoint, credentials, and connection state.
+- **MCP Connection**: Configuration for external service integration including service type, endpoint, credentials, and connection state. Managed by embedded MCP server module.
 - **Document Change**: Represents modification to a document including type (insert, delete, replace), location, content, and timestamp. Used for diff generation and undo/redo.
+
+## Technical Constraints *(clarified)*
+
+### GUI Framework
+- **Framework**: PySide6 (Qt for Python)
+- **License**: LGPL - allows commercial-friendly distribution
+- **Rationale**: Provides professional IDE features (tabbed interface, tree views, syntax highlighting editors), superior cross-platform consistency, and active community support
+
+### MCP Implementation
+- **Architecture**: Embedded MCP server running as Python module within editor process
+- **Lifecycle**: Started automatically on application launch, stopped on exit
+- **Rationale**: Aligns with self-contained principle, simplifies deployment (no separate service), easier credential sharing, reduced complexity for end users
 
 ## Success Criteria *(mandatory)*
 
