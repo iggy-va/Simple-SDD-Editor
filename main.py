@@ -2,25 +2,33 @@
 """Speckit Editor - Main entry point"""
 
 import sys
+from pathlib import Path
+
 from PySide6.QtWidgets import QApplication
+
+from src.gui import MainWindow
+from src.utils.logging import setup_logging
+
+# Setup logging
+setup_logging()
 
 
 def main() -> int:
     """Main application entry point"""
+    # Create Qt application
     app = QApplication(sys.argv)
+    
+    # Set application metadata
     app.setApplicationName("Speckit Editor")
-    app.setApplicationVersion("0.1.0")
     app.setOrganizationName("Speckit")
+    app.setApplicationVersion("0.1.0")
     
-    # TODO: Initialize main window once implemented
-    # from src.gui.main_window import MainWindow
-    # window = MainWindow()
-    # window.show()
+    # Create and show main window
+    window = MainWindow()
+    window.show()
     
-    print("Speckit Editor - Development Build")
-    print("Main window not yet implemented")
-    
-    return 0  # Exit immediately for now
+    # Run event loop
+    return app.exec()
 
 
 if __name__ == "__main__":
