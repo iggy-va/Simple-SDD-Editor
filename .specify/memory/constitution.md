@@ -32,6 +32,20 @@ GitHub Copilot (or compatible AI assistant) integration for generating speckit a
 
 AI assistance MUST be optional, reviewable, and editable by users before commitment.
 
+### VI. Accessibility & 508 Compliance (NON-NEGOTIABLE)
+The editor MUST comply with Section 508 of the Rehabilitation Act and WCAG 2.1 Level AA standards. This includes:
+- Full keyboard navigation for all functionality without requiring a mouse
+- Screen reader compatibility with ARIA labels and semantic markup
+- Sufficient color contrast ratios (4.5:1 for normal text, 3:1 for large text, 7:1 for enhanced)
+- Visible focus indicators for all interactive elements (minimum 2px outline with high contrast)
+- No time-dependent interactions without alternatives or user control
+- Accessible error messages and validation feedback announced to assistive technologies
+- Support for assistive technologies (screen readers, voice control, screen magnification, alternative input devices)
+- Resizable text without loss of functionality (up to 200% zoom)
+- No content that causes seizures (no flashing >3 times per second)
+
+Accessibility MUST NOT be an afterthought or "nice to have" feature - it is a core requirement equal in priority to functionality. All features MUST be designed with accessibility from the start, not retrofitted. Automated accessibility testing MUST be part of the CI/CD pipeline, and manual testing with screen readers MUST occur before each release.
+
 ## Technical Constraints
 
 ### Technology Stack
@@ -108,11 +122,14 @@ sdd-editor/
 - Trade-offs documented in architecture decision records (ADRs)
 - Regular architecture reviews to ensure compliance
 
-**Version**: 1.1.0 | **Ratified**: 2025-12-18 | **Last Amended**: 2025-12-22
+**Version**: 1.2.0 | **Ratified**: 2025-12-18 | **Last Amended**: 2025-12-22
 
 ---
 
 ## Amendment History
+
+### v1.2.0 (2025-12-22)
+**Addition**: Added Principle VI - Accessibility & 508 Compliance as a non-negotiable core principle. The editor must comply with Section 508 and WCAG 2.1 Level AA standards, including full keyboard navigation, screen reader support, color contrast requirements, and comprehensive assistive technology compatibility. Accessibility is now mandatory for all features with automated testing required in CI/CD pipeline.
 
 ### v1.1.0 (2025-12-22)
 **Clarification**: Self-Contained principle now explicitly requires standalone executables (.exe, .app, AppImage) bundling Python runtime. Users must not need Python pre-installed. Packaging tools (PyInstaller) must create platform-native executables for Windows, macOS, and Linux.
