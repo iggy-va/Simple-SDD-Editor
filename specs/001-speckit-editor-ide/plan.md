@@ -141,6 +141,11 @@ sdd-editor/
 │   │   ├── test_mcp_services.py
 │   │   └── test_git_integration.py
 │   │
+│   ├── integration/          # Integration tests with real dependencies
+│   │   ├── __init__.py
+│   │   ├── test_git_operations.py  # Git integration with real repos
+│   │   └── conftest.py       # Shared integration fixtures
+│   │
 │   └── fixtures/             # Test data
 │       ├── sample_project/
 │       └── mock_responses/

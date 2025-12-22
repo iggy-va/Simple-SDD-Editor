@@ -149,5 +149,116 @@ def test_project_timestamps(temp_project_dir):
     assert project.last_modified_at is not None
 
 
+def test_scan_documents_pattern(temp_project_dir):
+    """Test scanning with pattern"""
+    project = SpeckitProject(temp_project_dir)
+    docs = project.scan_documents("**/spec.md")
+    assert len(docs) >= 1
+
+
+def test_get_feature_documents(temp_project_dir):
+    """Test getting feature documents"""
+    project = SpeckitProject(temp_project_dir)
+    feature_dir = temp_project_dir / "specs" / "001-test-feature"
+    feature_dir.mkdir(parents=True, exist_ok=True)
+    (feature_dir / "spec.md").write_text("# Spec")
+    (feature_dir / "plan.md").write_text("# Plan")
+    docs = project.get_feature_documents("001")
+    assert len(docs) >= 2
+
+
+def test_create_document(temp_project_dir):
+    """Test creating new document"""
+    project = SpeckitProject(temp_project_dir)
+    new_path = temp_project_dir / "specs" / "001-test-feature" / "research.md"
+    content = "# Research"
+    
+    doc = project.create_document(new_path, content)
+    assert doc.path == new_path
+    assert new_path.exists()
+
+
+def test_save_document(temp_project_dir):
+    """Test saving document"""
+    project = SpeckitProject(temp_project_dir)
+    spec_path = temp_project_dir / "specs" / "001-test-feature" / "spec.md"
+    doc = project.get_document(spec_path)
+    
+    doc.content = "# Modified"
+    project.save_document(doc)
+    
+    assert spec_path.read_text(encoding="utf-8") == "# Modified"
+
+
+def test_project_without_constitution(tmp_path):
+    """Test project without constitution"""
+    project_root = tmp_path / "no_const"
+    project_root.mkdir()
+    
+    project = SpeckitProject(project_root)
+    assert project.constitution_path is None
+
+
+def test_project_name(temp_project_dir):
+    """Test project name extraction"""
+    project = SpeckitProject(temp_project_dir)
+    assert project.name == temp_project_dir.name
+
+
+def test_rebuild_index(temp_project_dir):
+    """Test rebuild index"""
+    project = SpeckitProject(temp_project_dir)
+    (temp_project_dir / "test.md").write_text("# Test")
+    project.rebuild_index(background=False)
+    assert project._index is not None
+
+
+def test_get_document_caching(temp_project_dir):
+    """Test document caching"""
+    project = SpeckitProject(temp_project_dir)
+    doc_path = temp_project_dir / "test.md"
+    doc_path.write_text("# Test")
+    doc1 = project.get_document(doc_path)
+    doc2 = project.get_document(doc_path)
+    assert doc1 is doc2
+
+
+def test_project_root_path(temp_project_dir):
+    """Test project root path"""
+    project = SpeckitProject(temp_project_dir)
+    assert project.root_path == temp_project_dir
+
+
+def test_scan_documents_excludes_git(temp_project_dir):
+    """Test scan excludes .git directory"""
+    project = SpeckitProject(temp_project_dir)
+    git_dir = temp_project_dir / ".git"
+    git_dir.mkdir(exist_ok=True)
+    (temp_project_dir / "valid.md").write_text("# Valid")
+    
+    docs = project.scan_documents()
+    assert all(".git" not in str(d) for d in docs)
+
+
+def test_document_force_reload(temp_project_dir):
+    """Test force reloading document"""
+    project = SpeckitProject(temp_project_dir)
+    doc_path = temp_project_dir / "test.md"
+    doc_path.write_text("# Original")
+    
+    doc1 = project.get_document(doc_path)
+    doc_path.write_text("# Modified")
+    doc2 = project.get_document(doc_path, force_reload=True)
+    
+    assert doc1 is not doc2
+
+
+def test_project_settings_integration(temp_project_dir):
+    """Test project settings loaded correctly"""
+    project = SpeckitProject(temp_project_dir)
+    assert project.settings is not None
+    assert hasattr(project.settings, "tab_size")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

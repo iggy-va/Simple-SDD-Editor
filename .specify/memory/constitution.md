@@ -93,9 +93,16 @@ sdd-editor/
 ### Testing Requirements
 - Unit tests for all core logic (pytest)
 - Integration tests for MCP integrations (mock external services)
-- GUI tests using framework-specific tools (pytest-qt for Qt)
-- Minimum 80% code coverage for core modules
+- GUI tests using pytest-qt for all completed GUI features
+- **Minimum 90% code coverage for completed features only**
+  - Coverage calculated only for modules/features marked as complete/implemented
+  - Incomplete features excluded from coverage percentage until completion
+  - Once a feature is marked complete, it must maintain 90% coverage
+  - GUI tests required for all completed GUI features
 - All tests must pass before commits to main branch
+- Coverage reports generated and reviewed with each PR, gated by 90% for completed modules
+- Uncovered code paths in completed features must be documented with justification
+- Test stubs required for incomplete features to maintain passing test suite
 
 ### Version Control
 - Git-based workflow with feature branches

@@ -209,6 +209,25 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **Lifecycle**: Started automatically on application launch, stopped on exit
 - **Rationale**: Aligns with self-contained principle, simplifies deployment (no separate service), easier credential sharing, reduced complexity for end users
 
+### Testing & Code Quality
+- **Minimum Coverage**: 90% for completed features only (core, GUI, utils)
+- **Coverage Scope**: Only features marked as complete/implemented are included in coverage calculations
+- **Incomplete Features**: Modules with incomplete implementations excluded from coverage percentage until feature completion, at which point 90% target applies
+- **Test-First Development**: Create stub implementations for incomplete features to maintain passing tests
+- **Stub Requirements**: All stubs must handle positive and negative test cases
+- **Character Escaping**: All shell commands and f-strings must properly escape special characters (quotes, backslashes, unicode)
+- **GUI Test Requirements** (applies when GUI features are complete):
+  - Use pytest-qt for all GUI component tests
+  - Test widget creation, user interactions (clicks, typing, shortcuts), state management
+  - Test document loading/saving through GUI, syntax highlighting activation, auto-completion triggers
+  - Test error dialogs, confirmation prompts, status indicators
+  - Test keyboard navigation, accessibility features, screen reader compatibility
+  - Test multi-window scenarios, tab switching, focus management
+  - Mock file system and git operations to isolate GUI logic
+  - Each completed GUI feature must achieve 90% coverage before being marked complete
+- **CI/CD**: Coverage reports generated and reviewed with each PR, gated by 90% threshold for completed modules only
+- **Accessibility Testing**: Automated accessibility tests in CI, manual screen reader testing pre-release
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
