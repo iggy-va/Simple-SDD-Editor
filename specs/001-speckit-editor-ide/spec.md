@@ -99,6 +99,30 @@ Users can invoke AI assistant (GitHub Copilot or compatible) to generate specifi
 
 ---
 
+### User Story 7 - Educational Onboarding and Example Projects (Priority: P5)
+
+Users can access guided onboarding, in-app help, and example projects to learn speckit methodology. Example projects can be imported, modified, and saved as user's own project to learn by doing.
+
+**Why this priority**: Post-MVP enhancement that helps low-informed users leverage speckit fully. Core editing must work first before adding educational features.
+
+**Independent Test**: Can be tested by launching the app as a new user, completing the interactive tutorial, importing an example project, modifying it, and saving as a new project. Delivers value by reducing learning curve and accelerating user proficiency.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user launches the application for the first time, **When** they see the welcome screen, **Then** an interactive tutorial is offered with option to skip or start
+2. **Given** a user is editing a document, **When** they hover over speckit-specific elements (FR IDs, priority markers), **Then** contextual tooltips explain the element's purpose and format
+3. **Given** a user views validation errors, **When** they click on an error, **Then** an educational message explains why it's wrong and how to fix it with examples
+4. **Given** a user opens the Example Projects gallery, **When** they browse available examples, **Then** they see two curated projects: "Simple: Solitaire Card Game" (single-feature web app demonstrating basic speckit workflow) and "Complex: Interactive Data Dashboard" (multi-feature web app pulling 3 public data sources with charts, demonstrating advanced speckit patterns)
+5. **Given** a user selects an example project, **When** they click "Import and Customize", **Then** the project is copied to their workspace where they can modify and save it as their own
+6. **Given** a user accesses the Help panel, **When** they search for speckit concepts, **Then** they find explanations of methodology, document types, and workflow guidance
+7. **Given** a user has completed spec but no plan, **When** they view project status, **Then** a workflow assistant suggests "Next: Create implementation plan" with guidance
+
+**Example Projects**:
+- **Simple Project**: "Solitaire Card Game" - Web application for playing solitaire with drag-and-drop cards, scoring, and undo functionality. Demonstrates single P1 feature with clear spec → plan → tasks workflow.
+- **Complex Project**: "Interactive Data Dashboard" - Web application that integrates 3 public APIs (weather data, stock prices, social media trends) to generate real-time interactive charts with filtering, date ranges, and export options. Demonstrates multiple P1-P3 features, API integration, data modeling, and iterative development.
+
+---
+
 ### User Story 6 - Template Management and Customization (Priority: P4)
 
 Users can view, edit, and create custom speckit templates. Changes to templates are versioned and can be applied to new documents or existing documents can be upgraded to new template versions.
@@ -145,7 +169,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a text editor with syntax highlighting for markdown elements (headers, code blocks, links, bold, italic, lists) and speckit-specific elements (FR/SC IDs, Given/When/Then keywords, priority markers P1-P4, section markers)
+- **FR-001**: System MUST provide a text editor with syntax highlighting for markdown elements (headers, code blocks, links, bold, italic, lists) and speckit-specific elements (FR/SC IDs, Given/When/Then keywords, priority markers P1-P4, section markers) and auto-completion (triggered by Ctrl+Space) for section headings, requirement IDs (FR-XXX, SC-XXX), keywords (Given/When/Then), and template variables
 - **FR-002**: System MUST load and parse existing speckit projects from filesystem directories
 - **FR-003**: System MUST display project structure in a hierarchical tree view showing specs (organized by feature number), templates (grouped by type), and memory folders with expandable/collapsible nodes, unlimited depth support, and visual nesting indentation (20px per level)
 - **FR-004**: System MUST allow users to create new documents from predefined templates (spec, plan, tasks, checklist)
@@ -161,8 +185,8 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-014**: System MUST allow users to test MCP connections with immediate feedback (connection status response within 5 seconds, timeout warning at 3 seconds)
 - **FR-015**: System MUST provide AI assistance integration for document generation and suggestions
 - **FR-016**: System MUST present AI suggestions for user review before applying changes
-- **FR-017**: System MUST allow users to view, edit, and create custom templates
-- **FR-018**: System MUST version templates and track template changes over time
+- **FR-017**: System MUST provide read-only default templates (spec, plan, tasks, checklist) that users can view and copy to create custom templates
+- **FR-018**: System MUST allow users to create and edit custom templates with version tracking
 - **FR-019**: System MUST validate document structure against template requirements
 - **FR-020**: System MUST provide search functionality with configurable scope (current document, open documents, or entire project), searching both document names and content, supporting regex patterns and case-sensitive matching
 - **FR-021**: System MUST support keyboard shortcuts for common operations defined as actions used in >50% of user sessions: File (Ctrl+N new, Ctrl+O open, Ctrl+S save, Ctrl+Shift+S save all, Ctrl+W close), Edit (Ctrl+Z undo, Ctrl+Y redo, Ctrl+F find, Ctrl+H replace), Navigation (Ctrl+Tab switch tabs, Ctrl+G go to line, Ctrl+Shift+E focus project tree), Git (Ctrl+K commit, Ctrl+Shift+P push, Ctrl+Shift+L pull, Ctrl+D show diff), and customization capability for user-defined shortcuts
@@ -170,7 +194,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-023**: System MUST detect external file changes and offer reload options
 - **FR-024**: System MUST handle git merge conflicts with conflict resolution UI
 - **FR-025**: System MUST provide auto-save functionality with user-configurable intervals
-- **FR-026**: System MUST display real-time validation errors and warnings for document structure
+- **FR-026**: System MUST display real-time validation errors and warnings for document structure using inline squiggly underlines (red for errors, yellow for warnings), margin icons (clickable to navigate to error), and a separate Problems panel showing comprehensive error list with file, line number, and description
 - **FR-027**: System MUST support drag-and-drop file operations within project tree for allowed combinations: documents between folders (move), files to tabs area (open), external files into project (import), with visual drop target highlighting and forbidden cursor for invalid targets
 - **FR-028**: System MUST provide context menus for common file operations defined as non-destructive actions and safe destructive actions: rename, delete (with confirmation), duplicate, copy path, reveal in file explorer, open in external editor
 - **FR-029**: System MUST maintain editor scroll position and cursor location when switching between files
@@ -187,6 +211,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-040**: System MUST define auto-save behavior: trigger after 30 seconds of inactivity (configurable 10-300s range), maintain unsaved indicator until explicit save or auto-save completes, and provide visual feedback when auto-save executes
 - **FR-041**: System MUST prioritize local unsaved changes over external file modifications by default, presenting conflict resolution dialog with options to: keep local, accept external, compare and merge, or save as new file
 - **FR-042**: System MUST start embedded MCP server during application initialization (within the 3-second startup budget) and gracefully handle server startup failures by logging errors, disabling MCP features, and allowing editor to function normally without MCP capabilities
+- **FR-043**: System MUST provide editor styling with open-source fixed-width font (default: JetBrains Mono 11pt), dark theme by default with light theme option and custom theme support, and toggleable features including line numbers, current line highlighting, and minimap/scrollbar preview
 
 ### Key Entities
 

@@ -314,6 +314,18 @@ class TemplateVariable:
     validation_pattern: Optional[str]        # Regex pattern for validation
 ```
 
+**Standard Template Variables**:
+- `[FEATURE_NAME]` - Name/description of the feature (required for spec, plan, tasks)
+- `[FEATURE_ID]` - Feature number/identifier (e.g., "001", required for spec, plan, tasks)
+- `[DATE]` - Current date in YYYY-MM-DD format (default: today)
+- `[AUTHOR]` - Document author name (default: git user.name or OS username)
+- `[BRANCH]` - Git branch name (default: current branch)
+- `[TASK_NAME]` - Task description (required for task templates)
+- `[TASK_ID]` - Task identifier (e.g., "T001", required for task templates)
+- `[TASK_IMPLEMENTER]` - Person assigned to task (optional)
+- `[FEATURE_IMPLEMENTER]` - Person assigned to feature (optional)
+- `[DONE_DATE]` - Completion date in YYYY-MM-DD format (optional)
+
 **Behaviors**:
 ```python
 def instantiate(self, variables: Dict[str, str], output_path: Path) -> SpeckitDocument:
