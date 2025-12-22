@@ -8,8 +8,10 @@ from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
+    QHBoxLayout,
     QMainWindow,
     QMessageBox,
+    QSplitter,
     QStatusBar,
     QTabWidget,
     QVBoxLayout,
@@ -19,6 +21,7 @@ from PySide6.QtWidgets import (
 from ..core import SpeckitDocument, SpeckitProject
 from ..utils.logging import get_logger
 from .editor import SpeckitEditorWidget
+from .navigator import ProjectNavigator
 from .template_dialog import TemplateDialog
 
 logger = get_logger(__name__)
@@ -173,22 +176,34 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Ready")
     
     def _create_central_widget(self) -> None:
-        """Create central widget with tab container"""
+        """Create central widget with splitter for navigator and tabs"""
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
         # Main layout
-        layout = QVBoxLayout(central_widget)
+        layout = QHBoxLayout(central_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Tab widget for open documents
+        # Splitter for navigator and editor area
+        self.splitter = QSplitter(Qt.Horizontal)
+        
+        # Project navigator (left panel)
+        self.navigator = ProjectNavigator()
+        self.navigator.doubleClicked.connect(self._on_navigator_file_double_clicked)
+        self.splitter.addWidget(self.navigator)
+        
+        # Tab widget for open documents (right panel)
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.setMovable(True)
         self.tab_widget.tabCloseRequested.connect(self._on_tab_close_requested)
+        self.splitter.addWidget(self.tab_widget)
         
-        layout.addWidget(self.tab_widget)
+        # Set splitter sizes (20% navigator, 80% editor)
+        self.splitter.setSizes([200, 800])
+        
+        layout.addWidget(self.splitter)
         
         # Show welcome message
         self._show_welcome_tab()
@@ -377,7 +392,8 @@ class MainWindow(QMainWindow):
             # Update status bar
             self.status_bar.showMessage(f"Loaded project: {self.project.name}")
             
-            # TODO: Populate project explorer in Phase 4
+            # Populate project navigator
+            self.navigator.set_project(self.project)
             
             logger.info(f"Project loaded successfully: {self.project.name}")
         except Exception as e:
@@ -563,7 +579,42 @@ class MainWindow(QMainWindow):
         
         if saved_count > 0:
             self.status_bar.showMessage(f"Auto-saved {saved_count} document(s)", 2000)
-            logger.debug(f"Auto-saved {saved_count} documents")    
+            logger.debug(f"Auto-saved {saved_count} documents")
+    
+    def _on_navigator_file_double_clicked(self, index) -> None:
+        """Handle double-click on file in navigator"""
+        from PySide6.QtCore import Qt
+        
+        path = index.data(Qt.UserRole)
+        if not path or not path.is_file():
+            return
+        
+        # Only open markdown files
+        if path.suffix.lower() not in ['.md', '.markdown']:
+            logger.debug(f"Skipping non-markdown file: {path}")
+            return
+        
+        try:
+            # Load document from project
+            if self.project:
+                doc = self.project.get_document(path)
+                self._open_document_in_editor(doc)
+            else:
+                # Fallback: create standalone document
+                doc = SpeckitDocument(
+                    path=path,
+                    relative_path=path.name,
+                    content=path.read_text(encoding='utf-8')
+                )
+                self._open_document_in_editor(doc)
+        except Exception as e:
+            logger.error(f"Failed to open file from navigator: {e}")
+            QMessageBox.critical(
+                self,
+                "Error Opening File",
+                f"Failed to open file:\n{str(e)}"
+            )
+            
     def _on_validation_complete(self, result) -> None:
         """Handle validation completion"""
         from ..core.validator import ValidationResult
