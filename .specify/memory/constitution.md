@@ -3,7 +3,7 @@
 ## Core Principles
 
 ### I. Self-Contained & Portable
-The SDD Editor MUST be fully self-contained with zero external installation requirements beyond Python runtime. All dependencies are managed within the application. The editor MUST run identically on Windows, macOS, and Linux without platform-specific installations or configurations.
+The SDD Editor MUST be fully self-contained with zero external installation requirements. The editor MUST be distributed as standalone executables for Windows (.exe), macOS (.app), and Linux (AppImage/executable) that bundle Python runtime and all dependencies. Users MUST NOT be required to install Python or any other runtime. The editor MUST run identically on all platforms without platform-specific installations or configurations.
 
 ### II. Python-First Architecture
 All core functionality built in Python with a modern GUI framework (candidates: PyQt6, PySide6, or Tkinter). Architecture separates concerns: Core logic → MCP integration layer → GUI layer. Each layer independently testable and loosely coupled.
@@ -108,4 +108,11 @@ sdd-editor/
 - Trade-offs documented in architecture decision records (ADRs)
 - Regular architecture reviews to ensure compliance
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-18 | **Last Amended**: 2025-12-18
+**Version**: 1.1.0 | **Ratified**: 2025-12-18 | **Last Amended**: 2025-12-22
+
+---
+
+## Amendment History
+
+### v1.1.0 (2025-12-22)
+**Clarification**: Self-Contained principle now explicitly requires standalone executables (.exe, .app, AppImage) bundling Python runtime. Users must not need Python pre-installed. Packaging tools (PyInstaller) must create platform-native executables for Windows, macOS, and Linux.
