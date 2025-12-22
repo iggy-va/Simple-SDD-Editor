@@ -130,15 +130,15 @@ def test_project_settings_integration(temp_project_dir):
     project = SpeckitProject(temp_project_dir)
     
     assert project.settings is not None
-    assert project.settings.editor_font_size == 11  # Default value
+    assert project.settings.tab_size == 4  # Default value
     
     # Modify and save settings
-    project.settings.editor_font_size = 14
+    project.settings.tab_size = 8
     project.settings.save(temp_project_dir / ".specify" / "settings.json")
     
     # Create new project instance
     project2 = SpeckitProject(temp_project_dir)
-    assert project2.settings.editor_font_size == 14
+    assert project2.settings.tab_size == 8
 
 
 def test_project_timestamps(temp_project_dir):
