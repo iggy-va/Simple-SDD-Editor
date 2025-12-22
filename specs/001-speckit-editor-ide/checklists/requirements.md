@@ -99,7 +99,7 @@
 - [ ] CHK037 - Are primary flow requirements complete for document creation workflow? [Coverage, Primary Flow, Spec §User Story 1]
 - [ ] CHK038 - Are primary flow requirements complete for project navigation workflow? [Coverage, Primary Flow, Spec §User Story 2]
 - [ ] CHK039 - Are primary flow requirements complete for git operations workflow? [Coverage, Primary Flow, Spec §User Story 3]
-- [ ] CHK040 - Are alternate flow requirements defined for offline mode when MCP integrations unavailable? [Coverage, Alternate Flow, Gap]
+- [x] CHK040 - Are alternate flow requirements defined for offline mode when MCP integrations unavailable? [Coverage, Alternate Flow, Spec §FR-033]
 - [ ] CHK041 - Are exception flow requirements defined for document corruption scenarios? [Coverage, Exception Flow, Spec §Edge Cases]
 - [ ] CHK042 - Are exception flow requirements defined for concurrent edit conflicts? [Coverage, Exception Flow, Spec §Edge Cases]
 - [ ] CHK043 - Are exception flow requirements defined for git merge conflicts? [Coverage, Exception Flow, Spec §Edge Cases]
@@ -108,13 +108,13 @@
 
 ## Edge Case Coverage
 
-- [ ] CHK046 - Are requirements defined for zero-state scenarios (no specs in project)? [Coverage, Edge Case, Gap]
-- [ ] CHK047 - Are requirements defined for maximum capacity scenarios (1000+ document project)? [Coverage, Edge Case, Gap]
+- [x] CHK046 - Are requirements defined for zero-state scenarios (no specs in project)? [Coverage, Edge Case, Spec §FR-034]
+- [x] CHK047 - Are requirements defined for maximum capacity scenarios (1000+ document project)? [Coverage, Edge Case, Spec §FR-035]
 - [ ] CHK048 - Are requirements defined for network partition scenarios affecting git/MCP operations? [Coverage, Edge Case, Spec §Edge Cases]
-- [ ] CHK049 - Are requirements defined for file system permission errors? [Coverage, Edge Case, Gap]
+- [x] CHK049 - Are requirements defined for file system permission errors? [Coverage, Edge Case, Spec §FR-036]
 - [ ] CHK050 - Are requirements defined for incompatible template version migrations? [Coverage, Edge Case, Spec §User Story 6]
 - [ ] CHK051 - Are requirements defined for partial MCP integration failures (some services down)? [Coverage, Edge Case, Spec §Edge Cases]
-- [ ] CHK052 - Are requirements defined for AI service rate limiting or quota exhaustion? [Coverage, Edge Case, Gap]
+- [x] CHK052 - Are requirements defined for AI service rate limiting or quota exhaustion? [Coverage, Edge Case, Spec §FR-037]
 
 ## Non-Functional Requirements
 
@@ -137,15 +137,15 @@
 - [ ] CHK066 - Is the assumption that GitHub Copilot is available validated or marked optional? [Assumption, Spec §FR-015]
 - [ ] CHK067 - Are network connectivity assumptions for MCP integrations documented? [Assumption, Spec §FR-011]
 - [ ] CHK068 - Are file system structure assumptions for speckit projects documented? [Assumption, Spec §FR-002]
-- [ ] CHK069 - Are Jira API version compatibility requirements specified? [Dependency, Gap, Spec §FR-011]
-- [ ] CHK070 - Are GitHub API version compatibility requirements specified? [Dependency, Gap, Spec §FR-011]
+- [x] CHK069 - Are Jira API version compatibility requirements specified? [Dependency, Spec §FR-038]
+- [x] CHK070 - Are GitHub API version compatibility requirements specified? [Dependency, Spec §FR-039]
 
 ## Ambiguities & Conflicts
 
-- [ ] CHK071 - Is the relationship between auto-save (FR-025) and unsaved change tracking (FR-006) clearly defined? [Ambiguity, Spec §FR-006, §FR-025]
-- [ ] CHK072 - Is the priority of external file changes (FR-023) vs local unsaved changes (FR-006) specified? [Conflict, Spec §FR-023, §FR-006]
-- [ ] CHK073 - Is the scope of "common operations" for keyboard shortcuts (FR-021) explicitly defined? [Ambiguity, Spec §FR-021]
-- [ ] CHK074 - Is the scope of "context menus" for file operations (FR-028) explicitly defined? [Ambiguity, Spec §FR-028]
+- [x] CHK071 - Is the relationship between auto-save (FR-025) and unsaved change tracking (FR-006) clearly defined? [Clarity, Spec §FR-040]
+- [x] CHK072 - Is the priority of external file changes (FR-023) vs local unsaved changes (FR-006) specified? [Clarity, Spec §FR-041]
+- [x] CHK073 - Is the scope of "common operations" for keyboard shortcuts (FR-021) explicitly defined? [Clarity, Spec §FR-021]
+- [x] CHK074 - Is the scope of "context menus" for file operations (FR-028) explicitly defined? [Clarity, Spec §FR-028]
 - [ ] CHK075 - Is the conflict resolution between AI suggestions and manual edits specified? [Ambiguity, Spec §FR-015, §FR-016]
 - [ ] CHK076 - Is the behavior when template validation fails (FR-019) during document save clearly defined? [Ambiguity, Spec §FR-019, §FR-005]
 - [ ] CHK077 - Is the interaction between embedded MCP server lifecycle and application startup specified? [Clarity, Spec §Technical Constraints, §SC-007]

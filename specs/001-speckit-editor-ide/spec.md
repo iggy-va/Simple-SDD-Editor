@@ -159,18 +159,27 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-018**: System MUST version templates and track template changes over time
 - **FR-019**: System MUST validate document structure against template requirements
 - **FR-020**: System MUST provide search functionality with configurable scope (current document, open documents, or entire project), searching both document names and content, supporting regex patterns and case-sensitive matching
-- **FR-021**: System MUST support keyboard shortcuts for common operations: File (Ctrl+N new, Ctrl+O open, Ctrl+S save, Ctrl+Shift+S save all, Ctrl+W close), Edit (Ctrl+Z undo, Ctrl+Y redo, Ctrl+F find, Ctrl+H replace), Navigation (Ctrl+Tab switch tabs, Ctrl+G go to line, Ctrl+Shift+E focus project tree), Git (Ctrl+K commit, Ctrl+Shift+P push, Ctrl+Shift+L pull, Ctrl+D show diff), and customization capability for user-defined shortcuts
+- **FR-021**: System MUST support keyboard shortcuts for common operations defined as actions used in >50% of user sessions: File (Ctrl+N new, Ctrl+O open, Ctrl+S save, Ctrl+Shift+S save all, Ctrl+W close), Edit (Ctrl+Z undo, Ctrl+Y redo, Ctrl+F find, Ctrl+H replace), Navigation (Ctrl+Tab switch tabs, Ctrl+G go to line, Ctrl+Shift+E focus project tree), Git (Ctrl+K commit, Ctrl+Shift+P push, Ctrl+Shift+L pull, Ctrl+D show diff), and customization capability for user-defined shortcuts
 - **FR-022**: System MUST run on Windows, macOS, and Linux with identical functionality
 - **FR-023**: System MUST detect external file changes and offer reload options
 - **FR-024**: System MUST handle git merge conflicts with conflict resolution UI
 - **FR-025**: System MUST provide auto-save functionality with user-configurable intervals
 - **FR-026**: System MUST display real-time validation errors and warnings for document structure
 - **FR-027**: System MUST support drag-and-drop file operations within project tree
-- **FR-028**: System MUST provide context menus for common file operations (rename, delete, duplicate)
+- **FR-028**: System MUST provide context menus for common file operations defined as non-destructive actions and safe destructive actions: rename, delete (with confirmation), duplicate, copy path, reveal in file explorer, open in external editor
 - **FR-029**: System MUST maintain editor scroll position and cursor location when switching between files
 - **FR-030**: System MUST support undo/redo operations across document editing sessions
 - **FR-031**: System MUST support full keyboard-only navigation across all UI elements (menus, tree view, editor, dialogs, settings) with visible focus indicators and logical tab order
 - **FR-032**: System MUST provide screen reader compatibility with ARIA labels for all interactive elements, announced state changes, and accessible text alternatives for visual indicators
+- **FR-033**: System MUST support offline mode when MCP integrations are unavailable, maintaining all core editing and git functionality with cached data where applicable and clear offline status indicators
+- **FR-034**: System MUST display helpful zero-state UI when opening empty projects, providing quick-start actions (create first spec, import existing specs, view tutorial) and onboarding guidance
+- **FR-035**: System MUST handle large projects (1000+ documents) by implementing lazy loading, virtual scrolling in tree view, and progressive indexing for search with performance warnings when thresholds exceeded
+- **FR-036**: System MUST gracefully handle file system permission errors by detecting read/write access issues, displaying actionable error messages, and providing fallback options (copy to accessible location, open read-only)
+- **FR-037**: System MUST handle AI assistance rate limiting and quota exhaustion by detecting service limits, displaying clear status messages, and providing graceful degradation to manual editing without feature loss
+- **FR-038**: System MUST support Jira Cloud REST API v3 and Jira Server API v2 with explicit version detection and compatibility warnings for unsupported versions
+- **FR-039**: System MUST support GitHub REST API v3 and GraphQL API v4 with automatic version selection and graceful fallback for deprecated endpoints
+- **FR-040**: System MUST define auto-save behavior: trigger after 30 seconds of inactivity (configurable 10-300s range), maintain unsaved indicator until explicit save or auto-save completes, and provide visual feedback when auto-save executes
+- **FR-041**: System MUST prioritize local unsaved changes over external file modifications by default, presenting conflict resolution dialog with options to: keep local, accept external, compare and merge, or save as new file
 
 ### Key Entities
 
