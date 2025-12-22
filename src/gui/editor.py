@@ -7,12 +7,13 @@ from PySide6.QtGui import (
     QKeyEvent,
     QSyntaxHighlighter,
     QTextCharFormat,
+    QTextCursor,
     QTextDocument,
 )
 from PySide6.QtWidgets import QCompleter, QTextEdit
 
 from ..core import SpeckitDocument
-from ..core.validator import DocumentValidator
+from ..core.validator import DocumentValidator, ValidationResult
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -176,6 +177,7 @@ class SpeckitEditorWidget(QTextEdit):
         
         self.document_path = None
         self.speckit_document = None
+        self.validation_result: ValidationResult = None
         
         # Setup editor
         self._setup_editor()
@@ -346,3 +348,47 @@ class SpeckitEditorWidget(QTextEdit):
             
         except Exception as e:
             logger.error(f"Validation failed: {e}")
+    
+    def display_validation_results(self, result: ValidationResult) -> None:
+        """Display validation errors and warnings with visual indicators"""
+        self.validation_result = result
+        
+        # Clear previous error formatting by rehighlighting
+        if self.highlighter:
+            self.highlighter.rehighlight()
+        
+        # Add squiggly underlines for errors (red) and warnings (yellow)
+        cursor = QTextCursor(self.document())
+        cursor.movePosition(QTextCursor.Start)
+        
+        # Error format (red squiggly underline)
+        error_format = QTextCharFormat()
+        error_format.setUnderlineColor(QColor("#DC2626"))
+        error_format.setUnderlineStyle(QTextCharFormat.WaveUnderline)
+        
+        # Warning format (yellow squiggly underline)
+        warning_format = QTextCharFormat()
+        warning_format.setUnderlineColor(QColor("#F59E0B"))
+        warning_format.setUnderlineStyle(QTextCharFormat.WaveUnderline)
+        
+        # Apply error underlines
+        for error in result.errors:
+            if error.line_number:
+                # Move to line (line numbers are 1-based)
+                cursor.movePosition(QTextCursor.Start)
+                for _ in range(error.line_number - 1):
+                    cursor.movePosition(QTextCursor.Down)
+                
+                # Select the line
+                cursor.select(QTextCursor.LineUnderCursor)
+                cursor.mergeCharFormat(error_format)
+        
+        # Apply warning underlines
+        for warning in result.warnings:
+            if warning.line_number:
+                cursor.movePosition(QTextCursor.Start)
+                for _ in range(warning.line_number - 1):
+                    cursor.movePosition(QTextCursor.Down)
+                
+                cursor.select(QTextCursor.LineUnderCursor)
+                cursor.mergeCharFormat(warning_format)

@@ -571,6 +571,12 @@ class MainWindow(QMainWindow):
         if not isinstance(result, ValidationResult):
             return
         
+        # Get current editor
+        current_widget = self.tab_widget.currentWidget()
+        if isinstance(current_widget, SpeckitEditorWidget):
+            # Display validation results in editor (squiggly underlines)
+            current_widget.display_validation_results(result)
+        
         # Display validation status in status bar
         if result.is_valid:
             if result.warnings:
