@@ -169,6 +169,8 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-028**: System MUST provide context menus for common file operations (rename, delete, duplicate)
 - **FR-029**: System MUST maintain editor scroll position and cursor location when switching between files
 - **FR-030**: System MUST support undo/redo operations across document editing sessions
+- **FR-031**: System MUST support full keyboard-only navigation across all UI elements (menus, tree view, editor, dialogs, settings) with visible focus indicators and logical tab order
+- **FR-032**: System MUST provide screen reader compatibility with ARIA labels for all interactive elements, announced state changes, and accessible text alternatives for visual indicators
 
 ### Key Entities
 
