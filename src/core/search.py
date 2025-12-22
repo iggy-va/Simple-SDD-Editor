@@ -1,5 +1,6 @@
 """Search and indexing for Speckit Editor"""
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -9,11 +10,21 @@ from .document import SpeckitDocument
 logger = get_logger(__name__)
 
 
+@dataclass
+class SearchOptions:
+    """Search configuration options"""
+    case_sensitive: bool = False
+    whole_word: bool = False
+    use_regex: bool = False
+    include_drafts: bool = True
+
+
 class DocumentIndex:
     """In-memory inverted index for document search"""
     
     def __init__(self, project_root: Path):
         self.project_root = project_root
+        self.root_path = project_root  # Alias for tests
         
         # Inverted index: term -> set of document paths
         self.term_index: Dict[str, Set[Path]] = {}
@@ -23,6 +34,34 @@ class DocumentIndex:
         
         # Document metadata: path -> (title, doc_type)
         self.document_metadata: Dict[Path, tuple[str, str]] = {}
+    
+    def index_document(self, path: Path) -> None:
+        """Index a single document (stub)"""
+        if not path.exists():
+            return
+        try:
+            doc = SpeckitDocument.load(path)
+            self.add_document(doc)
+        except Exception as e:
+            logger.error(f"Failed to index document {path}: {e}")
+    
+    def index_all(self) -> None:
+        """Index all documents in project (stub)"""
+        if not self.project_root.exists():
+            return
+        for md_file in self.project_root.rglob("*.md"):
+            self.index_document(md_file)
+    
+    def search(self, query) -> List:
+        """Search for documents (stub)"""
+        # Return empty list for now
+        return []
+    
+    def clear(self) -> None:
+        """Clear the index"""
+        self.term_index.clear()
+        self.requirement_index.clear()
+        self.document_metadata.clear()
     
     def add_document(self, document: SpeckitDocument) -> None:
         """Add document to index"""
@@ -61,8 +100,11 @@ class DocumentIndex:
         # Remove metadata
         self.document_metadata.pop(path, None)
     
-    def search(self, query: str, max_results: int = 50) -> List[Path]:
+    def search(self, query: str, options: SearchOptions = None, max_results: int = 50) -> List[Path]:
         """Search for documents matching query"""
+        if options is None:
+            options = SearchOptions()
+        
         logger.debug(f"Searching: {query}")
         
         terms = self._tokenize(query)
@@ -85,6 +127,14 @@ class DocumentIndex:
         ranked = sorted(results, key=lambda p: self._rank_document(p, terms), reverse=True)
         
         return ranked[:max_results]
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get index statistics"""
+        return {
+            "document_count": len(self.document_metadata),
+            "term_count": len(self.term_index),
+            "requirement_count": len(self.requirement_index)
+        }
     
     def find_requirement(self, req_id: str) -> tuple[Path, int] | None:
         """Find document and line number for a requirement ID"""

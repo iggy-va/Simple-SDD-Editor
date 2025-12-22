@@ -4,11 +4,12 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor,
     QFont,
+    QKeyEvent,
     QSyntaxHighlighter,
     QTextCharFormat,
     QTextDocument,
 )
-from PySide6.QtWidgets import QTextEdit
+from PySide6.QtWidgets import QCompleter, QTextEdit
 
 from ..core import SpeckitDocument
 from ..core.validator import DocumentValidator
@@ -182,6 +183,9 @@ class SpeckitEditorWidget(QTextEdit):
         # Install syntax highlighter
         self.highlighter = MarkdownHighlighter(self.document())
         
+        # Setup auto-completion
+        self._setup_autocomplete()
+        
         # Validation timer (500ms delay after typing stops)
         self.validation_timer = QTimer(self)
         self.validation_timer.setSingleShot(True)
@@ -209,6 +213,84 @@ class SpeckitEditorWidget(QTextEdit):
         
         # Placeholder text
         self.setPlaceholderText("Start typing your specification...")
+    
+    def _setup_autocomplete(self) -> None:
+        """Setup auto-completion for section headings, IDs, keywords, variables"""
+        # Completion items
+        completions = [
+            # Section headings
+            "## Clarifications",
+            "## User Scenarios & Testing",
+            "## Requirements",
+            "### Functional Requirements",
+            "### Non-Functional Requirements",
+            "## Success Criteria",
+            "## Testing & Code Quality",
+            "## Edge Cases",
+            "## Technical Constraints",
+            
+            # Requirement IDs
+            "FR-001", "FR-002", "FR-003", "FR-004", "FR-005",
+            "SC-001", "SC-002", "SC-003", "SC-004", "SC-005",
+            "NFR-001", "NFR-002", "NFR-003",
+            
+            # BDD Keywords
+            "**Given**", "**When**", "**Then**", "**And**", "**But**",
+            
+            # Priority markers
+            "Priority: P1", "Priority: P2", "Priority: P3", "Priority: P4",
+            
+            # Template variables
+            "[FEATURE_NAME]", "[FEATURE_ID]", "[DATE]", "[AUTHOR]", "[BRANCH]",
+            "[TASK_NAME]", "[TASK_ID]", "[TASK_IMPLEMENTER]", 
+            "[FEATURE_IMPLEMENTER]", "[DONE_DATE]",
+        ]
+        
+        self.completer = QCompleter(completions, self)
+        self.completer.setWidget(self)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.activated.connect(self._insert_completion)
+    
+    def _insert_completion(self, completion: str) -> None:
+        """Insert selected completion at cursor"""
+        cursor = self.textCursor()
+        
+        # Find the word being completed
+        cursor.movePosition(cursor.StartOfWord, cursor.KeepAnchor)
+        cursor.removeSelectedText()
+        
+        # Insert completion
+        cursor.insertText(completion)
+        self.setTextCursor(cursor)
+    
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Handle key presses including Ctrl+Space for auto-completion"""
+        # Trigger auto-completion on Ctrl+Space
+        if event.key() == Qt.Key_Space and event.modifiers() == Qt.ControlModifier:
+            # Show completer
+            cursor = self.textCursor()
+            cursor.select(cursor.WordUnderCursor)
+            prefix = cursor.selectedText()
+            
+            self.completer.setCompletionPrefix(prefix)
+            popup = self.completer.popup()
+            popup.setCurrentIndex(self.completer.completionModel().index(0, 0))
+            
+            # Position popup at cursor
+            rect = self.cursorRect()
+            rect.setWidth(self.completer.popup().sizeHintForColumn(0)
+                         + self.completer.popup().verticalScrollBar().sizeHint().width())
+            self.completer.complete(rect)
+            return
+        
+        # Let completer handle its events
+        if self.completer.popup().isVisible():
+            if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab):
+                event.ignore()
+                return
+        
+        # Default handling
+        super().keyPressEvent(event)
     
     def load_document(self, document: SpeckitDocument) -> None:
         """Load a SpeckitDocument into the editor"""
@@ -260,7 +342,7 @@ class SpeckitEditorWidget(QTextEdit):
             # Emit result
             self.validationComplete.emit(result)
             
-            logger.debug(f\"Validation complete: {len(result.errors)} errors, {len(result.warnings)} warnings\")
+            logger.debug(f"Validation complete: {len(result.errors)} errors, {len(result.warnings)} warnings")
             
         except Exception as e:
-            logger.error(f\"Validation failed: {e}\")
+            logger.error(f"Validation failed: {e}")

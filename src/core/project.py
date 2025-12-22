@@ -236,6 +236,29 @@ class SpeckitProject:
             logger.info(f"Index rebuilt: {len(documents)} documents")
         except Exception as e:
             logger.error(f"Index rebuild failed: {e}")
+    
+    def get_feature_documents(self, feature_id: str) -> List[Path]:
+        """Get all documents for a feature"""
+        feature_dir = self.root_path / "specs" / f"{feature_id}-*"
+        docs = []
+        for dir_path in self.root_path.glob(str(feature_dir.relative_to(self.root_path))):
+            if dir_path.is_dir():
+                docs.extend(dir_path.glob("*.md"))
+        return docs
+    
+    def create_document(self, path: Path, doc_type: DocumentType, content: str = "") -> SpeckitDocument:
+        """Create new document"""
+        doc_path = self.root_path / path if not path.is_absolute() else path
+        doc_path.parent.mkdir(parents=True, exist_ok=True)
+        doc_path.write_text(content, encoding="utf-8")
+        doc = SpeckitDocument(doc_path, doc_type)
+        with self._documents_lock:
+            self._documents[doc_path] = doc
+        return doc
+    
+    def save_document(self, doc: SpeckitDocument) -> None:
+        """Save document to disk"""
+        doc.path.write_text(doc.content, encoding="utf-8")
 
 
 class FeatureBranch:

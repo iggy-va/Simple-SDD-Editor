@@ -89,41 +89,49 @@ class Template:
         
         return metadata
     
-    @staticmethod
-    def _extract_variables(content: str) -> List[TemplateVariable]:
-        """Extract {{variable}} placeholders from template content"""
+    @classmethod
+    def _extract_variables(cls, content: str) -> List[TemplateVariable]:
+        """Extract [VARIABLE] and {{variable}} placeholders from template content"""
         variables = []
         seen = set()
         
-        # Find all {{variable}} patterns
-        pattern = re.compile(r"\{\{([^}]+)\}\}")
-        for match in pattern.finditer(content):
-            var_name = match.group(1).strip()
-            
-            # Skip duplicates
-            if var_name in seen:
-                continue
-            seen.add(var_name)
-            
-            # Create variable with sensible defaults
-            variable = TemplateVariable(
-                name=var_name,
-                description=cls._humanize_variable_name(var_name),
-                default="",
-                required=True,
-            )
-            
-            # Add validation pattern for known variable types
-            if var_name == "feature_id":
-                variable.pattern = r"^\d{3}$"
-                variable.description = "Feature ID (3 digits, e.g., 001)"
-            elif var_name == "date":
-                variable.default = datetime.now().strftime("%Y-%m-%d")
-                variable.required = False
-            elif var_name == "author":
-                variable.required = False
-            
-            variables.append(variable)
+        # Find all {{variable}} and [VARIABLE] patterns
+        patterns = [
+            re.compile(r"\{\{([^}]+)\}\}"),  # {{variable}} format
+            re.compile(r"\[([A-Z_][A-Z0-9_]*)\]"),  # [VARIABLE] format (uppercase with underscores)
+        ]
+        
+        for pattern in patterns:
+            for match in pattern.finditer(content):
+                var_name = match.group(1).strip().lower().replace(" ", "_")
+                
+                # Skip duplicates
+                if var_name in seen:
+                    continue
+                seen.add(var_name)
+                
+                # Create variable with sensible defaults
+                variable = TemplateVariable(
+                    name=var_name,
+                    description=cls._humanize_variable_name(var_name),
+                    default="",
+                    required=True,
+                )
+                
+                # Add validation pattern and defaults for known variable types
+                if var_name == "feature_id" or var_name.endswith("_id"):
+                    variable.pattern = r"^\d{3}$"
+                    variable.description = "Feature ID (3 digits, e.g., 001)"
+                elif var_name == "date" or var_name == "done_date":
+                    variable.default = datetime.now().strftime("%Y-%m-%d")
+                    variable.required = False
+                elif var_name == "author" or var_name.endswith("_implementer"):
+                    variable.required = False
+                elif var_name == "branch":
+                    variable.required = False
+                    variable.default = "main"
+                
+                variables.append(variable)
         
         return variables
     
@@ -148,12 +156,23 @@ class Template:
                     f"(expected pattern: {var.pattern})"
                 )
         
-        # Substitute variables
+        # Substitute variables - support both {{variable}} and [VARIABLE] formats
         result = self.content
         for var in self.variables:
-            placeholder = f"{{{{{var.name}}}}}"
             value = values.get(var.name, var.default)
-            result = result.replace(placeholder, value)
+            
+            # Replace {{variable}} format (case-insensitive)
+            result = re.sub(
+                r"\{\{" + re.escape(var.name) + r"\}\}",
+                value,
+                result,
+                flags=re.IGNORECASE
+            )
+            
+            # Replace [VARIABLE] format (uppercase)
+            upper_name = var.name.upper().replace("_", " ")
+            result = result.replace(f"[{upper_name}]", value)
+            result = result.replace(f"[{var.name.upper()}]", value)
         
         logger.debug(f"Template instantiated with {len(values)} variables")
         return result
@@ -170,26 +189,42 @@ class TemplateManager:
     
     def __init__(self, templates_dir: Path):
         self.templates_dir = templates_dir
+        self.template_dir = templates_dir  # Alias for tests
         self._cache: Dict[str, Template] = {}
+        self.templates: Dict[str, Template] = {}  # For tests
     
-    def list_templates(self) -> List[str]:
-        """List available template names"""
+    def load_templates(self) -> None:
+        """Load all templates from directory"""
+        self.templates.clear()
+        self._cache.clear()
+        
         if not self.templates_dir.exists():
             logger.warning(f"Templates directory not found: {self.templates_dir}")
-            return []
+            return
         
-        templates = []
         for path in self.templates_dir.glob("*.md"):
-            templates.append(path.stem)
-        
-        return sorted(templates)
+            try:
+                template = Template.load(path)
+                self.templates[template.name] = template
+                self._cache[template.name] = template
+            except Exception as e:
+                logger.error(f"Failed to load template {path}: {e}")
     
-    def get_template(self, name: str, force_reload: bool = False) -> Template:
+    def list_templates(self) -> List[Template]:
+        """List available templates"""
+        if not self.templates:
+            self.load_templates()
+        return list(self.templates.values())
+    
+    def get_template(self, name: str, force_reload: bool = False) -> Optional[Template]:
         """Load template by name with caching"""
         if not force_reload and name in self._cache:
             return self._cache[name]
         
         template_path = self.templates_dir / f"{name}.md"
+        if not template_path.exists():
+            return None
+        
         template = Template.load(template_path)
         self._cache[name] = template
         

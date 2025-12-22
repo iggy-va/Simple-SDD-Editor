@@ -565,7 +565,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"Auto-saved {saved_count} document(s)", 2000)
             logger.debug(f"Auto-saved {saved_count} documents")    
     def _on_validation_complete(self, result) -> None:
-        \"\"\"Handle validation completion\"\"\"
+        """Handle validation completion"""
         from ..core.validator import ValidationResult
         
         if not isinstance(result, ValidationResult):
@@ -574,8 +574,8 @@ class MainWindow(QMainWindow):
         # Display validation status in status bar
         if result.is_valid:
             if result.warnings:
-                self.status_bar.showMessage(f\"✓ Valid ({len(result.warnings)} warnings)\", 3000)
+                self.status_bar.showMessage(f"✓ Valid ({len(result.warnings)} warnings)", 3000)
             else:
-                self.status_bar.showMessage(\"✓ Valid\", 3000)
+                self.status_bar.showMessage("✓ Valid", 3000)
         else:
-            self.status_bar.showMessage(f\"✗ {len(result.errors)} errors, {len(result.warnings)} warnings\", 5000)
+            self.status_bar.showMessage(f"✗ {len(result.errors)} errors, {len(result.warnings)} warnings", 5000)
