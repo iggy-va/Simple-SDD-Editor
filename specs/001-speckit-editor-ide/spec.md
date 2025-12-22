@@ -139,7 +139,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a text editor with syntax highlighting for markdown and speckit document formats
+- **FR-001**: System MUST provide a text editor with syntax highlighting for markdown elements (headers, code blocks, links, bold, italic, lists) and speckit-specific elements (FR/SC IDs, Given/When/Then keywords, priority markers P1-P4, section markers)
 - **FR-002**: System MUST load and parse existing speckit projects from filesystem directories
 - **FR-003**: System MUST display project structure in a hierarchical tree view showing specs, templates, and memory folders
 - **FR-004**: System MUST allow users to create new documents from predefined templates (spec, plan, tasks, checklist)

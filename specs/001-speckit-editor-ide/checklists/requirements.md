@@ -48,8 +48,8 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 - Are document creation and editing workflows completely specified for all template types? [Completeness, Spec §FR-004]
-- [ ] CHK002 - Are syntax highlighting requirements defined for all speckit document format elements? [Completeness, Spec §FR-001]
+- [x] CHK001 - Are document creation and editing workflows completely specified for all template types? [Completeness, Spec §FR-004]
+- [x] CHK002 - Are syntax highlighting requirements defined for all speckit document format elements? [Completeness, Spec §FR-001]
 - [ ] CHK003 - Are requirements specified for all stages of the document lifecycle (create, edit, save, close, reopen)? [Coverage, Spec §User Story 1]
 - [ ] CHK004 - Are tree view interaction requirements defined for all node types (specs, templates, memory folders)? [Completeness, Spec §FR-003]
 - [ ] CHK005 - Are git operation requirements complete for all version control scenarios (commit, push, pull, branch, merge)? [Completeness, Spec §FR-008]
@@ -61,7 +61,7 @@
 
 ## Requirement Clarity
 
-- [ ] CHK011 - Is "syntax highlighting" defined with specific format elements to be highlighted? [Clarity, Spec §FR-001]
+- [x] CHK011 - Is "syntax highlighting" defined with specific format elements to be highlighted? [Clarity, Spec §FR-001]
 - [ ] CHK012 - Is "real-time validation" quantified with specific timing thresholds? [Clarity, Spec §User Story 1]
 - [ ] CHK013 - Is "hierarchical tree view" defined with specific organization rules and depth limits? [Clarity, Spec §FR-003]
 - [ ] CHK014 - Are "visual indicators" for file changes specified with concrete visual properties? [Ambiguity, Spec §FR-009]
