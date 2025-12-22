@@ -110,10 +110,10 @@
 
 - [x] CHK046 - Are requirements defined for zero-state scenarios (no specs in project)? [Coverage, Edge Case, Spec §FR-034]
 - [x] CHK047 - Are requirements defined for maximum capacity scenarios (1000+ document project)? [Coverage, Edge Case, Spec §FR-035]
-- [ ] CHK048 - Are requirements defined for network partition scenarios affecting git/MCP operations? [Coverage, Edge Case, Spec §Edge Cases]
+- [x] CHK048 - Are requirements defined for network partition scenarios affecting git/MCP operations? [Coverage, Edge Case, Spec §Edge Cases]
 - [x] CHK049 - Are requirements defined for file system permission errors? [Coverage, Edge Case, Spec §FR-036]
-- [ ] CHK050 - Are requirements defined for incompatible template version migrations? [Coverage, Edge Case, Spec §User Story 6]
-- [ ] CHK051 - Are requirements defined for partial MCP integration failures (some services down)? [Coverage, Edge Case, Spec §Edge Cases]
+- [x] CHK050 - Are requirements defined for incompatible template version migrations? [Coverage, Edge Case, Spec §Edge Cases]
+- [x] CHK051 - Are requirements defined for partial MCP integration failures (some services down)? [Coverage, Edge Case, Spec §Edge Cases]
 - [x] CHK052 - Are requirements defined for AI service rate limiting or quota exhaustion? [Coverage, Edge Case, Spec §FR-037]
 
 ## Non-Functional Requirements
@@ -148,7 +148,7 @@
 - [x] CHK074 - Is the scope of "context menus" for file operations (FR-028) explicitly defined? [Clarity, Spec §FR-028]
 - [ ] CHK075 - Is the conflict resolution between AI suggestions and manual edits specified? [Ambiguity, Spec §FR-015, §FR-016]
 - [ ] CHK076 - Is the behavior when template validation fails (FR-019) during document save clearly defined? [Ambiguity, Spec §FR-019, §FR-005]
-- [ ] CHK077 - Is the interaction between embedded MCP server lifecycle and application startup specified? [Clarity, Spec §Technical Constraints, §SC-007]
+- [x] CHK077 - Is the interaction between embedded MCP server lifecycle and application startup specified? [Clarity, Spec §FR-042]
 
 ## Traceability & Structure
 

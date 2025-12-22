@@ -124,6 +124,10 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
   - System detects external changes, notifies user, and offers to reload, compare, or keep local version
 - What happens when MCP integrations lose connection during an operation?
   - Operations timeout gracefully with retry options, and cached data remains available offline
+- What happens when network partitions affect git or MCP operations?
+  - System detects network unavailability, queues operations for later retry, switches to offline mode with clear indicators, and maintains local functionality
+- How does the system handle partial MCP integration failures (some services available, others down)?
+  - System maintains independent status per integration, allows usage of working services while clearly indicating failed services, and provides selective retry
 - How does the system handle extremely large spec documents (>10MB)?
   - Editor lazy-loads content sections, maintains responsive UI, and warns users about performance impact
 - What happens when git operations fail (merge conflicts, network issues)?
@@ -134,6 +138,8 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
   - User review step prevents automatic acceptance; validation flags format errors before commit
 - How does the system handle credential expiration for MCP integrations?
   - Detects auth failures, prompts for re-authentication, and queues failed operations for retry
+- What happens when migrating documents to incompatible template versions?
+  - System validates template compatibility, warns about breaking changes, creates backup before migration, and provides rollback option if migration introduces validation errors
 
 ## Requirements *(mandatory)*
 
@@ -180,6 +186,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-039**: System MUST support GitHub REST API v3 and GraphQL API v4 with automatic version selection and graceful fallback for deprecated endpoints
 - **FR-040**: System MUST define auto-save behavior: trigger after 30 seconds of inactivity (configurable 10-300s range), maintain unsaved indicator until explicit save or auto-save completes, and provide visual feedback when auto-save executes
 - **FR-041**: System MUST prioritize local unsaved changes over external file modifications by default, presenting conflict resolution dialog with options to: keep local, accept external, compare and merge, or save as new file
+- **FR-042**: System MUST start embedded MCP server during application initialization (within the 3-second startup budget) and gracefully handle server startup failures by logging errors, disabling MCP features, and allowing editor to function normally without MCP capabilities
 
 ### Key Entities
 
