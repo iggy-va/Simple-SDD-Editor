@@ -158,7 +158,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-017**: System MUST allow users to view, edit, and create custom templates
 - **FR-018**: System MUST version templates and track template changes over time
 - **FR-019**: System MUST validate document structure against template requirements
-- **FR-020**: System MUST provide search functionality across all project documents
+- **FR-020**: System MUST provide search functionality with configurable scope (current document, open documents, or entire project), searching both document names and content, supporting regex patterns and case-sensitive matching
 - **FR-021**: System MUST support keyboard shortcuts for common operations
 - **FR-022**: System MUST run on Windows, macOS, and Linux with identical functionality
 - **FR-023**: System MUST detect external file changes and offer reload options

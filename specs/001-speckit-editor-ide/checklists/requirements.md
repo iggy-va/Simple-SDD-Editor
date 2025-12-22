@@ -56,8 +56,8 @@
 - [ ] CHK006 - Are requirements defined for all six MCP integration types listed? [Coverage, Spec §FR-011]
 - [ ] CHK007 - Are credential management requirements specified for all three OS platforms? [Completeness, Spec §FR-012]
 - [ ] CHK008 - Are AI assistance requirements defined for all document section types that benefit from generation? [Coverage, Spec §FR-015]
-- [ ] CHK009 - Are template management requirements complete for all CRUD operations (create, read, update, version)? [Completeness, Spec §User Story 6]
-- [ ] CHK010 - Are search functionality requirements specified for all searchable content types? [Gap, Spec §FR-020]
+- [x] CHK009 - Are template management requirements complete for all CRUD operations (create, read, update, version)? [Completeness, Spec §User Story 6]
+- [x] CHK010 - Are search functionality requirements specified for all searchable content types? [Completeness, Spec §FR-020]
 
 ## Requirement Clarity
 
