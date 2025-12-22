@@ -67,7 +67,7 @@
 - [ ] CHK014 - Are "visual indicators" for file changes specified with concrete visual properties? [Ambiguity, Spec §FR-009]
 - [ ] CHK015 - Is "secure storage" for credentials defined with specific encryption standards? [Clarity, Spec §FR-012]
 - [ ] CHK016 - Is "immediate feedback" for connection testing quantified with response time thresholds? [Clarity, Spec §FR-014]
-- [ ] CHK017 - Are "keyboard shortcuts" enumerated or are requirements for shortcut customization defined? [Gap, Spec §FR-021]
+- [x] CHK017 - Are "keyboard shortcuts" enumerated or are requirements for shortcut customization defined? [Clarity, Spec §FR-021]
 - [ ] CHK018 - Is "identical functionality" across platforms testably defined with specific parity criteria? [Measurability, Spec §FR-022]
 - [ ] CHK019 - Is "user-configurable intervals" for auto-save defined with min/max bounds? [Clarity, Spec §FR-025]
 - [ ] CHK020 - Are "drag-and-drop operations" specified with allowed source/target combinations? [Clarity, Spec §FR-027]

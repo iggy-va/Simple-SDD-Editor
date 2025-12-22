@@ -159,7 +159,7 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-018**: System MUST version templates and track template changes over time
 - **FR-019**: System MUST validate document structure against template requirements
 - **FR-020**: System MUST provide search functionality with configurable scope (current document, open documents, or entire project), searching both document names and content, supporting regex patterns and case-sensitive matching
-- **FR-021**: System MUST support keyboard shortcuts for common operations
+- **FR-021**: System MUST support keyboard shortcuts for common operations: File (Ctrl+N new, Ctrl+O open, Ctrl+S save, Ctrl+Shift+S save all, Ctrl+W close), Edit (Ctrl+Z undo, Ctrl+Y redo, Ctrl+F find, Ctrl+H replace), Navigation (Ctrl+Tab switch tabs, Ctrl+G go to line, Ctrl+Shift+E focus project tree), Git (Ctrl+K commit, Ctrl+Shift+P push, Ctrl+Shift+L pull, Ctrl+D show diff), and customization capability for user-defined shortcuts
 - **FR-022**: System MUST run on Windows, macOS, and Linux with identical functionality
 - **FR-023**: System MUST detect external file changes and offer reload options
 - **FR-024**: System MUST handle git merge conflicts with conflict resolution UI
