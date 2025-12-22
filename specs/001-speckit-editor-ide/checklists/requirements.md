@@ -62,15 +62,15 @@
 ## Requirement Clarity
 
 - [x] CHK011 - Is "syntax highlighting" defined with specific format elements to be highlighted? [Clarity, Spec §FR-001]
-- [ ] CHK012 - Is "real-time validation" quantified with specific timing thresholds? [Clarity, Spec §User Story 1]
-- [ ] CHK013 - Is "hierarchical tree view" defined with specific organization rules and depth limits? [Clarity, Spec §FR-003]
-- [ ] CHK014 - Are "visual indicators" for file changes specified with concrete visual properties? [Ambiguity, Spec §FR-009]
-- [ ] CHK015 - Is "secure storage" for credentials defined with specific encryption standards? [Clarity, Spec §FR-012]
-- [ ] CHK016 - Is "immediate feedback" for connection testing quantified with response time thresholds? [Clarity, Spec §FR-014]
+- [x] CHK012 - Is "real-time validation" quantified with specific timing thresholds? [Clarity, Spec §User Story 1]
+- [x] CHK013 - Is "hierarchical tree view" defined with specific organization rules and depth limits? [Clarity, Spec §FR-003]
+- [x] CHK014 - Are "visual indicators" for file changes specified with concrete visual properties? [Clarity, Spec §FR-009]
+- [x] CHK015 - Is "secure storage" for credentials defined with specific encryption standards? [Clarity, Spec §FR-012]
+- [x] CHK016 - Is "immediate feedback" for connection testing quantified with response time thresholds? [Clarity, Spec §FR-014]
 - [x] CHK017 - Are "keyboard shortcuts" enumerated or are requirements for shortcut customization defined? [Clarity, Spec §FR-021]
-- [ ] CHK018 - Is "identical functionality" across platforms testably defined with specific parity criteria? [Measurability, Spec §FR-022]
-- [ ] CHK019 - Is "user-configurable intervals" for auto-save defined with min/max bounds? [Clarity, Spec §FR-025]
-- [ ] CHK020 - Are "drag-and-drop operations" specified with allowed source/target combinations? [Clarity, Spec §FR-027]
+- [x] CHK018 - Is "identical functionality" across platforms testably defined with specific parity criteria? [Clarity, Spec §FR-022]
+- [x] CHK019 - Is "user-configurable intervals" for auto-save defined with min/max bounds? [Clarity, Spec §FR-040]
+- [x] CHK020 - Are "drag-and-drop operations" specified with allowed source/target combinations? [Clarity, Spec §FR-027]
 
 ## Requirement Consistency
 

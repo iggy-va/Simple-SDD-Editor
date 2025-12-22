@@ -16,7 +16,7 @@
 
 ### User Story 1 - Create and Edit Specification Documents (Priority: P1)
 
-Users can create new specification documents from templates and edit them with a rich text editor interface. The editor provides syntax highlighting, auto-completion, and real-time validation for speckit document formats.
+Users can create new specification documents from templates and edit them with a rich text editor interface. The editor provides syntax highlighting, auto-completion, and real-time validation (within 500ms of typing pause) for speckit document formats.
 
 **Why this priority**: This is the core MVP functionality - without the ability to create and edit documents, the editor has no value. This enables users to start working with speckit documents immediately.
 
@@ -141,18 +141,18 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 
 - **FR-001**: System MUST provide a text editor with syntax highlighting for markdown elements (headers, code blocks, links, bold, italic, lists) and speckit-specific elements (FR/SC IDs, Given/When/Then keywords, priority markers P1-P4, section markers)
 - **FR-002**: System MUST load and parse existing speckit projects from filesystem directories
-- **FR-003**: System MUST display project structure in a hierarchical tree view showing specs, templates, and memory folders
+- **FR-003**: System MUST display project structure in a hierarchical tree view showing specs (organized by feature number), templates (grouped by type), and memory folders with expandable/collapsible nodes, unlimited depth support, and visual nesting indentation (20px per level)
 - **FR-004**: System MUST allow users to create new documents from predefined templates (spec, plan, tasks, checklist)
 - **FR-005**: System MUST save documents to disk preserving markdown formatting and file structure
 - **FR-006**: System MUST track unsaved changes and prompt users before closing modified documents
 - **FR-007**: System MUST support multiple open documents with tabbed interface
 - **FR-008**: System MUST integrate with git for version control operations (status, diff, commit, push, pull, branch)
-- **FR-009**: System MUST display git branch information and file change status visually
+- **FR-009**: System MUST display git branch information and file change status visually using color-coded badges (green for added, yellow for modified, red for deleted, blue for renamed) and status icons in tree view and tab headers
 - **FR-010**: System MUST provide visual diff viewer for comparing document versions
 - **FR-011**: System MUST support embedded MCP server for external integrations (Jira, GitHub, databases, terminals, Chrome) running as a Python module within the editor process
-- **FR-012**: System MUST store MCP credentials securely using OS-native credential managers
+- **FR-012**: System MUST store MCP credentials securely using OS-native credential managers (Windows Credential Manager, macOS Keychain, Linux Secret Service) with AES-256 encryption at rest
 - **FR-013**: System MUST display connection status for all configured MCP integrations
-- **FR-014**: System MUST allow users to test MCP connections with immediate feedback
+- **FR-014**: System MUST allow users to test MCP connections with immediate feedback (connection status response within 5 seconds, timeout warning at 3 seconds)
 - **FR-015**: System MUST provide AI assistance integration for document generation and suggestions
 - **FR-016**: System MUST present AI suggestions for user review before applying changes
 - **FR-017**: System MUST allow users to view, edit, and create custom templates
@@ -160,12 +160,12 @@ Users can view, edit, and create custom speckit templates. Changes to templates 
 - **FR-019**: System MUST validate document structure against template requirements
 - **FR-020**: System MUST provide search functionality with configurable scope (current document, open documents, or entire project), searching both document names and content, supporting regex patterns and case-sensitive matching
 - **FR-021**: System MUST support keyboard shortcuts for common operations defined as actions used in >50% of user sessions: File (Ctrl+N new, Ctrl+O open, Ctrl+S save, Ctrl+Shift+S save all, Ctrl+W close), Edit (Ctrl+Z undo, Ctrl+Y redo, Ctrl+F find, Ctrl+H replace), Navigation (Ctrl+Tab switch tabs, Ctrl+G go to line, Ctrl+Shift+E focus project tree), Git (Ctrl+K commit, Ctrl+Shift+P push, Ctrl+Shift+L pull, Ctrl+D show diff), and customization capability for user-defined shortcuts
-- **FR-022**: System MUST run on Windows, macOS, and Linux with identical functionality
+- **FR-022**: System MUST run on Windows, macOS, and Linux with identical functionality verified by cross-platform test suite covering all 41 functional requirements with 100% pass rate on each platform
 - **FR-023**: System MUST detect external file changes and offer reload options
 - **FR-024**: System MUST handle git merge conflicts with conflict resolution UI
 - **FR-025**: System MUST provide auto-save functionality with user-configurable intervals
 - **FR-026**: System MUST display real-time validation errors and warnings for document structure
-- **FR-027**: System MUST support drag-and-drop file operations within project tree
+- **FR-027**: System MUST support drag-and-drop file operations within project tree for allowed combinations: documents between folders (move), files to tabs area (open), external files into project (import), with visual drop target highlighting and forbidden cursor for invalid targets
 - **FR-028**: System MUST provide context menus for common file operations defined as non-destructive actions and safe destructive actions: rename, delete (with confirmation), duplicate, copy path, reveal in file explorer, open in external editor
 - **FR-029**: System MUST maintain editor scroll position and cursor location when switching between files
 - **FR-030**: System MUST support undo/redo operations across document editing sessions
