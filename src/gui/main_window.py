@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +40,12 @@ class MainWindow(QMainWindow):
         self._create_central_widget()
         self._apply_styling()
         
+        # Auto-save timer (30 seconds default)
+        self.auto_save_timer = QTimer(self)
+        self.auto_save_timer.timeout.connect(self._auto_save_all)
+        self.auto_save_interval = 30000  # 30 seconds in milliseconds
+        self.auto_save_timer.start(self.auto_save_interval)
+        
         logger.info("MainWindow initialized")
     
     def _setup_window(self) -> None:
@@ -71,9 +77,16 @@ class MainWindow(QMainWindow):
         new_project_action.triggered.connect(self._on_new_project)
         file_menu.addAction(new_project_action)
         
+        # Open Document
+        open_doc_action = QAction("&Open Document...", self)
+        open_doc_action.setShortcut(QKeySequence.Open)
+        open_doc_action.setStatusTip("Open an existing document")
+        open_doc_action.triggered.connect(self._on_open_document)
+        file_menu.addAction(open_doc_action)
+        
         # Open Project
-        open_project_action = QAction("&Open Project...", self)
-        open_project_action.setShortcut(QKeySequence.Open)
+        open_project_action = QAction("Open &Project...", self)
+        open_project_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
         open_project_action.setStatusTip("Open an existing Speckit project")
         open_project_action.triggered.connect(self._on_open_project)
         file_menu.addAction(open_project_action)
@@ -304,6 +317,39 @@ class MainWindow(QMainWindow):
                         f"Failed to create document:\n{str(e)}"
                     )
     
+    def _on_open_document(self) -> None:
+        """Handle Open Document action"""
+        logger.info("Open Document requested")
+        
+        if not self.project:
+            QMessageBox.warning(
+                self,
+                "No Project",
+                "Please open a project first before opening documents."
+            )
+            return
+        
+        # Show file picker
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Speckit Document",
+            str(self.project.root_path / "specs"),
+            "Markdown Files (*.md);;All Files (*.*)"
+        )
+        
+        if file_path:
+            try:
+                # Load document
+                doc = self.project.get_document(Path(file_path))
+                self._open_document_in_editor(doc)
+            except Exception as e:
+                logger.error(f"Failed to open document: {e}")
+                QMessageBox.critical(
+                    self,
+                    "Error Opening Document",
+                    f"Failed to open document:\n{str(e)}"
+                )
+    
     def _on_open_project(self) -> None:
         """Handle Open Project action"""
         logger.info("Open Project requested")
@@ -483,6 +529,7 @@ class MainWindow(QMainWindow):
         
         # Connect signals
         editor.contentModified.connect(lambda: self._on_editor_modified(editor))
+        editor.validationComplete.connect(self._on_validation_complete)
         
         # Add to tab widget
         tab_title = document.path.name
@@ -503,3 +550,32 @@ class MainWindow(QMainWindow):
                 if not title.endswith(" *"):
                     self.tab_widget.setTabText(i, title + " *")
                 break
+    
+    def _auto_save_all(self) -> None:
+        """Auto-save all modified documents"""
+        saved_count = 0
+        
+        for i in range(self.tab_widget.count()):
+            widget = self.tab_widget.widget(i)
+            if isinstance(widget, SpeckitEditorWidget) and widget.is_modified():
+                if self._save_document(widget):
+                    saved_count += 1
+        
+        if saved_count > 0:
+            self.status_bar.showMessage(f"Auto-saved {saved_count} document(s)", 2000)
+            logger.debug(f"Auto-saved {saved_count} documents")    
+    def _on_validation_complete(self, result) -> None:
+        \"\"\"Handle validation completion\"\"\"
+        from ..core.validator import ValidationResult
+        
+        if not isinstance(result, ValidationResult):
+            return
+        
+        # Display validation status in status bar
+        if result.is_valid:
+            if result.warnings:
+                self.status_bar.showMessage(f\"✓ Valid ({len(result.warnings)} warnings)\", 3000)
+            else:
+                self.status_bar.showMessage(\"✓ Valid\", 3000)
+        else:
+            self.status_bar.showMessage(f\"✗ {len(result.errors)} errors, {len(result.warnings)} warnings\", 5000)

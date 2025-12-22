@@ -1,6 +1,6 @@
 """Document editor widget with syntax highlighting"""
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor,
     QFont,
@@ -11,6 +11,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QTextEdit
 
 from ..core import SpeckitDocument
+from ..core.validator import DocumentValidator
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -167,6 +168,7 @@ class SpeckitEditorWidget(QTextEdit):
     # Signals
     contentModified = Signal()  # Emitted when content changes
     validationRequested = Signal()  # Emitted when validation should run
+    validationComplete = Signal(object)  # Emitted with ValidationResult
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -179,6 +181,11 @@ class SpeckitEditorWidget(QTextEdit):
         
         # Install syntax highlighter
         self.highlighter = MarkdownHighlighter(self.document())
+        
+        # Validation timer (500ms delay after typing stops)
+        self.validation_timer = QTimer(self)
+        self.validation_timer.setSingleShot(True)
+        self.validation_timer.timeout.connect(self._run_validation)
         
         # Connect signals
         self.textChanged.connect(self._on_text_changed)
@@ -230,6 +237,30 @@ class SpeckitEditorWidget(QTextEdit):
         """Handle text changes"""
         self.contentModified.emit()
         
-        # Request validation after 500ms pause (implemented later)
-        # For now, just emit signal
-        # QTimer.singleShot(500, self.validationRequested.emit)
+        # Restart validation timer (500ms delay)
+        self.validation_timer.stop()
+        self.validation_timer.start(500)
+    
+    def _run_validation(self) -> None:
+        """Run validation on current document content"""
+        if not self.speckit_document:
+            return
+        
+        try:
+            # Update document content
+            self.speckit_document.content = self.get_content()
+            
+            # Re-parse document
+            self.speckit_document.parse()
+            
+            # Validate
+            validator = DocumentValidator()
+            result = validator.validate(self.speckit_document)
+            
+            # Emit result
+            self.validationComplete.emit(result)
+            
+            logger.debug(f\"Validation complete: {len(result.errors)} errors, {len(result.warnings)} warnings\")
+            
+        except Exception as e:
+            logger.error(f\"Validation failed: {e}\")
