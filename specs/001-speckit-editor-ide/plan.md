@@ -69,6 +69,35 @@ Verified compliance with `.specify/memory/constitution.md` (v1.0.0):
 
 **Gate Status**: ✅ **APPROVED** - All constitution principles satisfied, proceed with planning.
 
+## Implementation Strategy
+
+### Agent Selection Guidelines
+
+When implementing this feature, choose the appropriate AI agent based on task complexity:
+
+**Use Expensive Agent (e.g., Claude Opus)** for:
+- Requirements clarification and ambiguity resolution
+- Architectural decisions and system design
+- Complex debugging requiring deep code analysis
+- Novel features without existing patterns in codebase
+- First-in-category implementations (e.g., first MCP service, first dialog widget)
+- High-stakes decisions affecting multiple components
+
+**Use Cheaper Agent (e.g., Claude Sonnet)** for:
+- Following established patterns in codebase
+- Writing unit and integration tests
+- Implementing UI widgets after first example exists
+- CRUD operations and data access layers
+- Documentation and README updates
+- Refactoring within established architecture
+
+**Natural Handoff Points**:
+1. **After Clarification** → Expensive agent resolves ambiguities in spec, cheap agent implements clear requirements
+2. **After Architecture** → Expensive agent designs system/patterns, cheap agent follows them
+3. **After First Implementation** → Expensive agent builds first example (e.g., first validator), cheap agent builds remaining similar components
+
+**This Session Example**: Expensive agent clarified 5 ambiguities in US1, designed dual-format template system, and implemented auto-completion architecture. Cheap agent can now complete remaining US1 work (validation UI, file actions, dialogs) following PySide6 patterns already established in codebase.
+
 ## Project Structure
 
 ### Documentation (this feature)
