@@ -1,19 +1,279 @@
-# Simple SDD Editor
+# Speckit Document Editor/IDE
 
-A self-contained, cross-platform IDE for creating and managing Software Design Documents using the Speckit methodology.
+A cross-platform desktop IDE for creating and managing software specifications using the Speckit methodology. Features document editing with syntax highlighting, git integration, MCP service connections, AI assistance, and custom template management.
 
 ## Project Status
 
-**Current Version**: 0.2.0-alpha  
-**Test Coverage**: 87% (117 passing tests)  
-**MVP Status**: User Story 1 (P1) - ✅ Complete
+**Current Version**: 0.8.5-alpha  
+**Test Coverage**: 47% (122 passing tests)  
+**Progress**: 174/203 tasks complete (85%)
 
-### Implemented Features
-- ✅ **US1 (P1)**: Create and edit specifications with auto-completion, validation, and templates
-- ⏳ **US2 (P2)**: Project navigation (in development)  
-- ⏳ **US3 (P3)**: Git integration (planned)
-- ⏳ **US4 (P3)**: MCP integrations (planned)
-- ⏳ **US5 (P4)**: AI assistance (planned)
+### Feature Status
+
+| Feature | Priority | Status | Description |
+|---------|----------|--------|-------------|
+| **US1: Document Editing** | P1 (MVP) | ✅ Complete | Create/edit specs with templates, syntax highlighting, validation |
+| **US2: Project Navigation** | P2 | ✅ Complete | File navigator, multi-document tabs, project-wide search |
+| **US3: Git Integration** | P3 | ✅ Complete | Commits, branches, push/pull, diffs, merge conflict resolution |
+| **US4: MCP Connections** | P3 | ⚠️ Partial | Connection management complete, query/results UI pending (T130-T139) |
+| **US5: AI Assistant** | P4 | ✅ Complete | Quick suggestions (Ctrl+Space), full panel (Ctrl+Shift+A), validation, history |
+| **US6: Custom Templates** | P4 | ✅ Complete | Template creation, variables, versioning, team sharing |
+
+**Next Release**: MCP query/results UI (10 tasks), packaging for Windows/macOS/Linux (13 tasks)
+
+---
+
+## Quick Start (30 seconds)
+
+```bash
+# 1. Clone repository
+git clone https://github.com/iggy-va/Simple-SDD-Editor.git
+cd Simple-SDD-Editor
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Launch editor
+python main.py
+```
+
+**First-time use**: Select **File → New Document** (Ctrl+N) to create your first specification from a template.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- **Python 3.11+** (required for modern type hints)
+- **Git 2.30+** (for version control features)
+- **Windows 10+, macOS 11+, or Linux (Ubuntu 20.04+)**
+
+### Install from Source
+
+```bash
+# Clone repository
+git clone https://github.com/iggy-va/Simple-SDD-Editor.git
+cd Simple-SDD-Editor
+
+# Create virtual environment (recommended)
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run editor
+python main.py
+```
+
+### Install from Binary (Coming Soon)
+
+Standalone executables for Windows, macOS, and Linux will be available in the next release.
+
+---
+
+## Documentation
+
+📚 **[User Guide](docs/user-guide.md)** - Complete feature documentation for end users
+- Creating and editing documents
+- Using the file navigator and search
+- Git integration (commits, branches, diffs)
+- MCP service integrations (Jira, GitHub, databases)
+- AI assistant features
+- Custom template management
+
+🔧 **[Developer Guide](docs/developer-guide.md)** - Architecture and contributing guide
+- 3-layer architecture (core → mcp → gui)
+- Project structure and code conventions
+- Testing strategy (unit, integration, GUI)
+- Build and packaging workflow
+- Contributing guidelines
+
+📸 **[Screenshots](docs/screenshots/)** - Visual tour (coming soon)
+
+---
+
+## Key Features
+
+### 1. Document Editing with Syntax Highlighting
+- **Templates**: Spec, plan, tasks, checklist documents
+- **Syntax highlighting**: Headers, requirement IDs (FR-001), priority markers, code blocks, Gherkin keywords
+- **Real-time validation**: Structural checks, ID format validation, missing sections
+- **Auto-save**: Configurable intervals, unsaved change indicators
+
+### 2. Project Navigation
+- **File navigator**: Hierarchical tree view with file type icons
+- **Multi-document tabs**: Tab switching (Ctrl+Tab), preserved scroll positions
+- **Project-wide search**: Regex support, file filters, result navigation
+- **External change detection**: Automatic reload prompts when files change externally
+
+### 3. Git Integration
+- **Visual diff viewer**: Side-by-side comparisons before commits
+- **Branch management**: Create, switch, view current branch
+- **Commit operations**: Stage/unstage, commit messages, push/pull
+- **Merge conflict resolution**: Visual conflict editor with accept yours/theirs/both options
+
+### 4. MCP Service Integrations
+- **Connection management**: Add/test/remove connections for Jira, GitHub, databases, terminals, Chrome
+- **Secure credentials**: OS keyring storage (Windows Credential Manager, macOS Keychain, Linux Secret Service)
+- **Offline mode**: Cached data with 24-hour TTL when internet unavailable
+- **⚠️ Query/Results UI**: Coming in next release (T130-T139)
+
+### 5. AI Assistant
+- **Quick suggestions** (Ctrl+Space): Inline completions at cursor
+- **Full assistant panel** (Ctrl+Shift+A): Chat-based content generation
+- **Validation**: All AI-generated content validated before insertion
+- **Session history**: View/search past AI interactions, resume sessions
+
+### 6. Custom Templates
+- **Template editor**: Create/edit custom templates with variables
+- **Versioning**: Track template evolution with git
+- **Team sharing**: Share templates via git repository or file export
+- **Variable substitution**: `${feature_name}`, `${date}`, `${author}` auto-filled
+
+---
+
+## Keyboard Shortcuts
+
+### Document Editing
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New document |
+| `Ctrl+O` | Open project |
+| `Ctrl+S` | Save document |
+| `Ctrl+Shift+S` | Save all documents |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Y` | Redo |
+| `Ctrl+F` | Find in document |
+| `Ctrl+H` | Find and replace |
+
+### Navigation
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+P` | Quick open file |
+| `Ctrl+Shift+F` | Project-wide search |
+| `Ctrl+Tab` | Next tab |
+| `Ctrl+Shift+Tab` | Previous tab |
+| `Ctrl+1-9` | Jump to tab 1-9 |
+
+### Git Operations
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+G` | Toggle git panel |
+| `Ctrl+K` | Git commit |
+| `Ctrl+Shift+K` | Git push |
+| `Ctrl+Shift+P` | Git pull |
+
+### AI & MCP
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Space` | Quick AI suggestions |
+| `Ctrl+Shift+A` | Full AI assistant panel |
+| `Ctrl+M` | Toggle MCP panel |
+
+---
+
+## Architecture
+
+The editor uses a **3-layer architecture** for testability and maintainability:
+
+```
+┌─────────────────────────────────────┐
+│     GUI Layer (PySide6)             │  ← User interactions, Qt widgets
+│  MainWindow, Editor, Panels, Dialogs│
+└─────────────┬───────────────────────┘
+              │ (calls)
+┌─────────────▼───────────────────────┐
+│    MCP Integration Layer            │  ← External service integrations
+│  Server, Services (Jira, GitHub)    │
+└─────────────┬───────────────────────┘
+              │ (calls)
+┌─────────────▼───────────────────────┐
+│   Core Business Logic Layer         │  ← Document models, validation
+│  Document, Project, Validator, etc. │
+└─────────────────────────────────────┘
+```
+
+**Dependency Direction**: Always flows downward (GUI → MCP → Core). Core layer has zero knowledge of GUI or MCP.
+
+---
+
+## Project Structure
+
+```
+sdd-editor/
+├── src/
+│   ├── core/              # Business logic (document, project, validator)
+│   ├── mcp/               # MCP server and service integrations
+│   ├── gui/               # PySide6 UI components
+│   └── utils/             # Shared utilities (config, logging)
+├── tests/
+│   ├── unit/              # Unit tests (122 tests, 47% coverage)
+│   └── integration/       # Integration tests (coming soon)
+├── docs/
+│   ├── user-guide.md      # End-user documentation
+│   ├── developer-guide.md # Contributing and architecture
+│   └── screenshots/       # Visual tour (coming soon)
+├── .specify/              # Speckit metadata
+│   ├── memory/            # Constitution and principles
+│   └── templates/         # Default templates (spec, plan, tasks)
+├── specs/                 # Feature specifications
+│   └── 001-speckit-editor-ide/
+│       ├── spec.md        # Requirements and user stories
+│       ├── plan.md        # Technical design
+│       └── tasks.md       # Task breakdown (203 tasks)
+├── main.py                # Application entry point
+├── requirements.txt       # Python dependencies
+└── README.md              # This file
+```
+
+---
+
+## Contributing
+
+This project follows the **Speckit methodology**. All features begin as specifications:
+
+1. **`/speckit.specify`** - Define feature requirements
+2. **`/speckit.clarify`** - Resolve ambiguities
+3. **`/speckit.plan`** - Create technical design
+4. **`/speckit.tasks`** - Break down implementation
+5. **`/speckit.implement`** - Build with guidance
+
+See [Developer Guide](docs/developer-guide.md) for:
+- Code conventions (Black, Mypy, Google docstrings)
+- Testing strategy
+- Commit message format (Conventional Commits)
+- Pull request workflow
+
+---
+
+## License
+
+**MIT License** (to be determined)
+
+---
+
+## Links
+
+- **GitHub Repository**: https://github.com/iggy-va/Simple-SDD-Editor
+- **Feature Specification**: [specs/001-speckit-editor-ide/spec.md](specs/001-speckit-editor-ide/spec.md)
+- **Implementation Plan**: [specs/001-speckit-editor-ide/plan.md](specs/001-speckit-editor-ide/plan.md)
+- **Task Breakdown**: [specs/001-speckit-editor-ide/tasks.md](specs/001-speckit-editor-ide/tasks.md)
+- **Constitution**: [.specify/memory/constitution.md](.specify/memory/constitution.md)
+- **User Guide**: [docs/user-guide.md](docs/user-guide.md)
+- **Developer Guide**: [docs/developer-guide.md](docs/developer-guide.md)
+
+---
+
+**Maintainer**: Iggy ([@iggy-va](https://github.com/iggy-va))  
+**Last Updated**: 2025-12-23
 
 ## Project Description
 
