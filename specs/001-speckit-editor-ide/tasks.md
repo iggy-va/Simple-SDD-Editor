@@ -65,28 +65,28 @@
 ### Implementation for User Story 1
 
 - [x] T018 [P] [Complex] [US1] Implement Template model in src/core/template.py (load, instantiate with variables)
-- [ ] T019 [P] [Simple] [US1] Implement TemplateVariable data class in src/core/template.py
+- [x] T019 [P] [Simple] [US1] Implement TemplateVariable data class in src/core/template.py
 - [x] T020 [Simple] [US1] Copy default templates from .specify/templates/ to src/core/template.py (spec-template, plan-template, tasks-template, checklist-template)
 - [x] T021 [P] [Architecture] [US1] Implement SpeckitEditorWidget in src/gui/editor.py extending QTextEdit
 - [x] T022 [P] [Complex] [US1] Implement MarkdownHighlighter in src/gui/editor.py extending QSyntaxHighlighter (headers, code blocks, FR/SC IDs, priority markers, Given/When/Then)
 - [x] T023 [Complex] [US1] Implement syntax highlighting regex patterns in src/gui/editor.py (per FR-001)
 - [x] T024 [Simple] [US1] Implement QTextCharFormat styles for highlighted elements in src/gui/editor.py (colors, bold, font sizes)
-- [ ] T025 [P] [Simple] [US1] Implement DocumentChange model in src/core/document.py for undo/redo stack
-- [ ] T026 [Simple] [US1] Connect undo/redo operations to SpeckitEditorWidget in src/gui/editor.py using QTextDocument history
-- [ ] T027 [P] [Simple] [US1] Implement new document action in src/gui/main_window.py (File → New)
-- [ ] T028 [Simple] [US1] Create template selection dialog in src/gui/template_dialog.py with variable input forms
-- [ ] T029 [Simple] [US1] Integrate template instantiation with document creation in src/gui/main_window.py
-- [ ] T030 [P] [Simple] [US1] Implement save document action in src/gui/main_window.py (File → Save, Ctrl+S)
-- [ ] T031 [P] [Simple] [US1] Implement save all documents action in src/gui/main_window.py (File → Save All, Ctrl+Shift+S)
-- [ ] T032 [Simple] [US1] Implement unsaved changes tracking in src/gui/editor.py (dirty flag, textChanged signal)
-- [ ] T033 [Simple] [US1] Add unsaved indicator (*) to tab titles in src/gui/main_window.py
-- [ ] T034 [Simple] [US1] Implement close document prompt for unsaved changes in src/gui/main_window.py
-- [ ] T035 [P] [Simple] [US1] Implement open document action in src/gui/main_window.py (File → Open, Ctrl+O)
-- [ ] T036 [Simple] [US1] Integrate document parser with editor loading in src/gui/editor.py
-- [ ] T037 [P] [Complex] [US1] Implement real-time validation in src/gui/editor.py (trigger validation on 500ms typing pause)
-- [ ] T038 [Complex] [US1] Display validation errors/warnings in status bar or margin in src/gui/editor.py
-- [ ] T039 [P] [Simple] [US1] Implement auto-save functionality in src/gui/main_window.py (30s default interval, configurable 10-300s per FR-040)
-- [ ] T040 [Simple] [US1] Add visual feedback for auto-save completion in src/gui/main_window.py status bar
+- [x] T025 [P] [Simple] [US1] Implement DocumentChange model in src/core/document.py for undo/redo stack
+- [x] T026 [Simple] [US1] Connect undo/redo operations to SpeckitEditorWidget in src/gui/editor.py using QTextDocument history
+- [x] T027 [P] [Simple] [US1] Implement new document action in src/gui/main_window.py (File → New)
+- [x] T028 [Simple] [US1] Create template selection dialog in src/gui/template_dialog.py with variable input forms
+- [x] T029 [Simple] [US1] Integrate template instantiation with document creation in src/gui/main_window.py
+- [x] T030 [P] [Simple] [US1] Implement save document action in src/gui/main_window.py (File → Save, Ctrl+S)
+- [x] T031 [P] [Simple] [US1] Implement save all documents action in src/gui/main_window.py (File → Save All, Ctrl+Shift+S)
+- [x] T032 [Simple] [US1] Implement unsaved changes tracking in src/gui/editor.py (dirty flag, textChanged signal)
+- [x] T033 [Simple] [US1] Add unsaved indicator (*) to tab titles in src/gui/main_window.py
+- [x] T034 [Simple] [US1] Implement close document prompt for unsaved changes in src/gui/main_window.py
+- [x] T035 [P] [Simple] [US1] Implement open document action in src/gui/main_window.py (File → Open, Ctrl+O)
+- [x] T036 [Simple] [US1] Integrate document parser with editor loading in src/gui/editor.py
+- [x] T037 [P] [Complex] [US1] Implement real-time validation in src/gui/editor.py (trigger validation on 500ms typing pause)
+- [x] T038 [Complex] [US1] Display validation errors/warnings in status bar or margin in src/gui/editor.py
+- [x] T039 [P] [Simple] [US1] Implement auto-save functionality in src/gui/main_window.py (30s default interval, configurable 10-300s per FR-040)
+- [x] T040 [Simple] [US1] Add visual feedback for auto-save completion in src/gui/main_window.py status bar
 
 **Checkpoint**: User Story 1 complete - Users can create, edit, and save speckit documents with full syntax highlighting and validation
 
@@ -100,22 +100,22 @@
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [Architecture] [US2] Implement ProjectNavigator widget in src/gui/navigator.py extending QTreeView
-- [ ] T042 [P] [Complex] [US2] Implement LazyProjectModel in src/gui/navigator.py extending QAbstractItemModel (virtual scrolling for 1000+ files per FR-035)
-- [ ] T043 [Complex] [US2] Implement tree node loading in src/gui/navigator.py (specs organized by feature number, templates by type, memory folders)
-- [ ] T044 [Simple] [US2] Add visual indicators for node types in src/gui/navigator.py (icons for spec, plan, tasks, templates, folders)
-- [ ] T045 [Simple] [US2] Implement expandable/collapsible nodes with 20px indentation per level in src/gui/navigator.py
-- [ ] T046 [P] [Simple] [US2] Implement file click handler in src/gui/navigator.py to open documents in editor
-- [ ] T047 [Simple] [US2] Integrate ProjectNavigator with MainWindow left panel in src/gui/main_window.py
-- [ ] T048 [P] [Simple] [US2] Implement tabbed interface for multiple documents in src/gui/main_window.py using QTabWidget
-- [ ] T049 [Simple] [US2] Add tab close buttons and context menu (close, close others, close all) in src/gui/main_window.py
-- [ ] T050 [Simple] [US2] Implement tab switching with Ctrl+Tab keyboard shortcut in src/gui/main_window.py
-- [ ] T051 [Simple] [US2] Maintain scroll position and cursor location per document in src/gui/editor.py (per FR-029)
-- [ ] T052 [Simple] [US2] Restore scroll/cursor when switching tabs in src/gui/main_window.py
-- [ ] T053 [P] [Simple] [US2] Implement project opening action in src/gui/main_window.py (File → Open Project)
-- [ ] T054 [Simple] [US2] Load SpeckitProject and populate navigator on project open in src/gui/main_window.py
-- [ ] T055 [P] [Complex] [US2] Implement project refresh action in src/gui/navigator.py (detect external file changes)
-- [ ] T056 [Simple] [US2] Add visual indicators for file change status in navigator in src/gui/navigator.py (badges per FR-009)
+- [x] T041 [P] [Architecture] [US2] Implement ProjectNavigator widget in src/gui/navigator.py extending QTreeView
+- [x] T042 [P] [Complex] [US2] Implement LazyProjectModel in src/gui/navigator.py extending QAbstractItemModel (virtual scrolling for 1000+ files per FR-035)
+- [x] T043 [Complex] [US2] Implement tree node loading in src/gui/navigator.py (specs organized by feature number, templates by type, memory folders)
+- [x] T044 [Simple] [US2] Add visual indicators for node types in src/gui/navigator.py (icons for spec, plan, tasks, templates, folders)
+- [x] T045 [Simple] [US2] Implement expandable/collapsible nodes with 20px indentation per level in src/gui/navigator.py
+- [x] T046 [P] [Simple] [US2] Implement file click handler in src/gui/navigator.py to open documents in editor
+- [x] T047 [Simple] [US2] Integrate ProjectNavigator with MainWindow left panel in src/gui/main_window.py
+- [x] T048 [P] [Simple] [US2] Implement tabbed interface for multiple documents in src/gui/main_window.py using QTabWidget
+- [x] T049 [Simple] [US2] Add tab close buttons and context menu (close, close others, close all) in src/gui/main_window.py
+- [x] T050 [Simple] [US2] Implement tab switching with Ctrl+Tab keyboard shortcut in src/gui/main_window.py
+- [x] T051 [Simple] [US2] Maintain scroll position and cursor location per document in src/gui/editor.py (per FR-029)
+- [x] T052 [Simple] [US2] Restore scroll/cursor when switching tabs in src/gui/main_window.py
+- [x] T053 [P] [Simple] [US2] Implement project opening action in src/gui/main_window.py (File → Open Project)
+- [x] T054 [Simple] [US2] Load SpeckitProject and populate navigator on project open in src/gui/main_window.py
+- [x] T055 [P] [Complex] [US2] Implement project refresh action in src/gui/navigator.py (detect external file changes)
+- [x] T056 [Simple] [US2] Add visual indicators for file change status in navigator in src/gui/navigator.py (badges per FR-009)
 - [ ] T057 [P] [Architecture] [US2] Implement search functionality in src/gui/main_window.py (Ctrl+F, search panel)
 - [ ] T058 [P] [Architecture] [US2] Implement DocumentIndex in src/core/indexer.py (in-memory inverted index with SQLite persistence)
 - [ ] T059 [Simple] [US2] Implement search with scope selection in src/gui/main_window.py (current/open/all documents per FR-020)
