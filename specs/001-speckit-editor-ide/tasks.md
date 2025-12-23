@@ -350,8 +350,8 @@
 - [x] T178 [P] [Simple] Display actionable error messages for permission issues in src/gui/main_window.py
 - [x] T179 [P] [Complex] Implement crash recovery with unsaved document cache in src/utils/config.py
 - [ ] T180 [P] [Complex] Test all 42 functional requirements on Windows, macOS, and Linux (per SC-011)
-- [ ] T181 [Architecture] Create PyInstaller spec file sdd-editor.spec for Windows (.exe), macOS (.app), and Linux (AppImage)
-- [ ] T182 [Simple] Configure PyInstaller to bundle Python runtime and all dependencies
+- [x] T181 [Architecture] Create PyInstaller spec file sdd-editor.spec for Windows (.exe), macOS (.app), and Linux (AppImage)
+- [x] T182 [Simple] Configure PyInstaller to bundle Python runtime and all dependencies
 - [ ] T183 [Complex] Test packaged executables on all three platforms
 - [ ] T184 [P] [Complex] Optimize bundle size with UPX compression and module exclusions
 - [ ] T185 [P] [Complex] Implement code signing for Windows and macOS executables
@@ -372,8 +372,8 @@
     - [Screenshots](docs/screenshots/) - Visual tour
   - Keyboard shortcuts table
   - License and contribution info
-- [ ] T190 [P] [Simple] Create LICENSE file (determine license)
-- [ ] T191 [P] [Simple] Create CONTRIBUTING.md with development workflow
+- [x] T190 [P] [Simple] Create LICENSE file (MIT License)
+- [x] T191 [P] [Simple] Create CONTRIBUTING.md with development workflow
 - [ ] T192 [Complex] Final testing pass for all 12 success criteria (SC-001 to SC-012)
 
 **Checkpoint**: Project complete and ready for release - all features implemented, tested, documented, and packaged
