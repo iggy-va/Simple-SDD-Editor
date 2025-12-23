@@ -1,16 +1,19 @@
 """Document editor widget with syntax highlighting"""
 
+from typing import Optional
+
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import (
     QColor,
     QFont,
     QKeyEvent,
+    QPalette,
     QSyntaxHighlighter,
     QTextCharFormat,
     QTextCursor,
     QTextDocument,
 )
-from PySide6.QtWidgets import QCompleter, QTextEdit
+from PySide6.QtWidgets import QCompleter, QLabel, QTextEdit
 
 from ..core import SpeckitDocument
 from ..core.validator import DocumentValidator, ValidationResult
@@ -181,6 +184,11 @@ class SpeckitEditorWidget(QTextEdit):
         self.saved_scroll_position = 0
         self.saved_cursor_position = 0
         
+        # AI suggestion state
+        self.ai_suggestion: Optional[str] = None
+        self.ai_suggestion_position: Optional[int] = None
+        self.suggestion_overlay: Optional[QLabel] = None
+        
         # Setup editor
         self._setup_editor()
         
@@ -190,7 +198,7 @@ class SpeckitEditorWidget(QTextEdit):
         # Setup auto-completion
         self._setup_autocomplete()
         
-        # Validation timer (500ms delay after typing stops)
+        # Validation timer (1000ms delay after typing stops - optimized for performance)
         self.validation_timer = QTimer(self)
         self.validation_timer.setSingleShot(True)
         self.validation_timer.timeout.connect(self._run_validation)
@@ -335,12 +343,12 @@ class SpeckitEditorWidget(QTextEdit):
         logger.debug(f"Restored position: scroll={self.saved_scroll_position}, cursor={self.saved_cursor_position}")
     
     def _on_text_changed(self) -> None:
-        """Handle text changes"""
+        """Handle text changes (optimized for typing performance)"""
         self.contentModified.emit()
         
-        # Restart validation timer (500ms delay)
+        # Restart validation timer (1000ms delay - optimized to reduce typing lag)
         self.validation_timer.stop()
-        self.validation_timer.start(500)
+        self.validation_timer.start(1000)
     
     def _run_validation(self) -> None:
         """Run validation on current document content"""
@@ -409,3 +417,193 @@ class SpeckitEditorWidget(QTextEdit):
                 
                 cursor.select(QTextCursor.LineUnderCursor)
                 cursor.mergeCharFormat(warning_format)
+    
+    def show_ai_suggestion(self, suggestion_text: str, position: Optional[int] = None) -> None:
+        """Display an inline AI suggestion at the cursor or specified position"""
+        if not suggestion_text:
+            return
+        
+        # Store suggestion
+        if position is None:
+            position = self.textCursor().position()
+        
+        self.ai_suggestion = suggestion_text
+        self.ai_suggestion_position = position
+        
+        # Create or update overlay label
+        if not self.suggestion_overlay:
+            self.suggestion_overlay = QLabel(self)
+            self.suggestion_overlay.setStyleSheet("""
+                QLabel {
+                    background-color: #E0F2FE;
+                    color: #0369A1;
+                    border: 1px solid #7DD3FC;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-family: Consolas;
+                    font-size: 11px;
+                }
+            """)
+            self.suggestion_overlay.setWordWrap(True)
+        
+        # Set suggestion text with hint
+        display_text = f"💡 AI Suggestion:\n{suggestion_text}\n\n(Tab to accept, Esc to reject)"
+        self.suggestion_overlay.setText(display_text)
+        self.suggestion_overlay.adjustSize()
+        
+        # Position overlay near cursor
+        cursor_rect = self.cursorRect()
+        overlay_x = cursor_rect.x() + 10
+        overlay_y = cursor_rect.y() + cursor_rect.height()
+        
+        # Keep within editor bounds
+        max_width = min(400, self.width() - 20)
+        self.suggestion_overlay.setMaximumWidth(max_width)
+        self.suggestion_overlay.adjustSize()
+        
+        if overlay_x + self.suggestion_overlay.width() > self.width():
+            overlay_x = self.width() - self.suggestion_overlay.width() - 10
+        
+        if overlay_y + self.suggestion_overlay.height() > self.height():
+            overlay_y = cursor_rect.y() - self.suggestion_overlay.height() - 5
+        
+        self.suggestion_overlay.move(overlay_x, overlay_y)
+        self.suggestion_overlay.show()
+        self.suggestion_overlay.raise_()
+        
+        logger.info(f"AI suggestion displayed at position {position}")
+    
+    def accept_ai_suggestion(self) -> bool:
+        """Accept and insert the current AI suggestion"""
+        if not self.ai_suggestion or self.ai_suggestion_position is None:
+            return False
+        
+        # Insert suggestion at saved position
+        cursor = self.textCursor()
+        cursor.setPosition(self.ai_suggestion_position)
+        cursor.insertText(self.ai_suggestion)
+        
+        # Clear suggestion
+        self.clear_ai_suggestion()
+        
+        logger.info("AI suggestion accepted")
+        return True
+    
+    def reject_ai_suggestion(self) -> bool:
+        """Reject and clear the current AI suggestion"""
+        if not self.ai_suggestion:
+            return False
+        
+        self.clear_ai_suggestion()
+        logger.info("AI suggestion rejected")
+        return True
+    
+    def clear_ai_suggestion(self) -> None:
+        """Clear the current AI suggestion"""
+        self.ai_suggestion = None
+        self.ai_suggestion_position = None
+        
+        if self.suggestion_overlay:
+            self.suggestion_overlay.hide()
+    
+    def extract_ai_context(self, context_type: str = "completion") -> dict:
+        """Extract intelligent context for AI prompts
+        
+        Args:
+            context_type: "completion", "chat", or "generation"
+            
+        Returns:
+            Dictionary with context information
+        """
+        cursor = self.textCursor()
+        full_text = self.toPlainText()
+        cursor_position = cursor.position()
+        
+        # Extract document type from path
+        document_type = "unknown"
+        if self.document_path:
+            name_lower = self.document_path.stem.lower()
+            if "spec" in name_lower:
+                document_type = "specification"
+            elif "plan" in name_lower:
+                document_type = "plan"
+            elif "task" in name_lower:
+                document_type = "tasks"
+            elif "checklist" in name_lower:
+                document_type = "checklist"
+        
+        # Get current line and surrounding context
+        cursor.select(QTextCursor.LineUnderCursor)
+        current_line = cursor.selectedText()
+        
+        # Get current section (find nearest header above cursor)
+        lines_before = full_text[:cursor_position].split("\n")
+        current_section = None
+        for line in reversed(lines_before):
+            if line.strip().startswith("#"):
+                current_section = line.strip()
+                break
+        
+        # Get selected text if any
+        selected_text = self.textCursor().selectedText()
+        
+        # Extract context before and after cursor
+        context_before_size = 500 if context_type == "completion" else 1000
+        context_after_size = 100 if context_type == "completion" else 500
+        
+        context_start = max(0, cursor_position - context_before_size)
+        context_end = min(len(full_text), cursor_position + context_after_size)
+        
+        context_before = full_text[context_start:cursor_position]
+        context_after = full_text[cursor_position:context_end]
+        
+        # Extract requirements/items near cursor (for spec documents)
+        nearby_requirements = []
+        if document_type == "specification":
+            # Look for FR-XXX, SC-XXX patterns in nearby text
+            import re
+            nearby_text = full_text[max(0, cursor_position - 1000):min(len(full_text), cursor_position + 1000)]
+            req_pattern = r'(FR|SC|NFR)-\d{3}'
+            nearby_requirements = re.findall(req_pattern, nearby_text)
+        
+        # Build context dictionary
+        context = {
+            "document_type": document_type,
+            "document_path": str(self.document_path) if self.document_path else None,
+            "cursor_position": cursor_position,
+            "current_line": current_line,
+            "current_section": current_section,
+            "selected_text": selected_text if selected_text else None,
+            "context_before": context_before,
+            "context_after": context_after,
+            "total_lines": len(full_text.split("\n")),
+            "total_chars": len(full_text),
+            "nearby_requirements": list(set(nearby_requirements)) if nearby_requirements else [],
+        }
+        
+        # Add document-specific context
+        if self.speckit_document:
+            context["has_frontmatter"] = bool(self.speckit_document.frontmatter)
+            if self.speckit_document.sections:
+                context["section_count"] = len(self.speckit_document.sections)
+                context["section_names"] = [s.title for s in self.speckit_document.sections]
+        
+        return context
+    
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Handle key press events, including AI suggestion acceptance/rejection"""
+        # Handle AI suggestion controls
+        if self.ai_suggestion:
+            if event.key() == Qt.Key_Tab and not event.modifiers():
+                # Accept suggestion with Tab
+                if self.accept_ai_suggestion():
+                    event.accept()
+                    return
+            elif event.key() == Qt.Key_Escape:
+                # Reject suggestion with Esc
+                if self.reject_ai_suggestion():
+                    event.accept()
+                    return
+        
+        # Default handling
+        super().keyPressEvent(event)

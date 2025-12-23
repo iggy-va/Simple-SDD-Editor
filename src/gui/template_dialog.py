@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QTextEdit,
@@ -41,6 +42,20 @@ class TemplateDialog(QDialog):
         self.setMinimumWidth(500)
         
         layout = QVBoxLayout(self)
+        
+        # Filter and template selection row
+        selection_layout = QHBoxLayout()
+        
+        # Type filter
+        filter_label = QLabel("Filter by type:")
+        self.type_filter = QComboBox()
+        self.type_filter.addItem("All Types")
+        self.type_filter.currentTextChanged.connect(self._on_filter_changed)
+        
+        selection_layout.addWidget(filter_label)
+        selection_layout.addWidget(self.type_filter, 1)
+        
+        layout.addLayout(selection_layout)
         
         # Template selection
         template_label = QLabel("Select Template:")
@@ -79,24 +94,58 @@ class TemplateDialog(QDialog):
         
         layout.addWidget(self.button_box)
     
-    def _load_templates(self) -> None:
-        """Load available templates into combo box"""
-        templates = self.template_manager.list_templates()
+    def _load_templates(self, filter_type: Optional[str] = None) -> None:
+        """Load available templates into combo box with optional type filter"""
+        self.template_combo.clear()
         
-        if not templates:
+        # Get templates grouped by type
+        grouped = self.template_manager.list_templates_by_type()
+        
+        if not grouped:
             logger.warning("No templates found")
             self.template_combo.addItem("No templates available")
             self.template_combo.setEnabled(False)
             self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
             return
         
-        for template_name in templates:
-            self.template_combo.addItem(template_name)
+        # Populate type filter on first load
+        if self.type_filter.count() == 1:  # Only has "All Types"
+            for type_name in sorted(grouped.keys()):
+                self.type_filter.addItem(type_name.title())
+        
+        # Filter templates by type if specified
+        if filter_type and filter_type != "All Types":
+            filter_type = filter_type.lower()
+            if filter_type in grouped:
+                for template in grouped[filter_type]:
+                    self.template_combo.addItem(template.name)
+        else:
+            # Show all templates grouped by type
+            for type_name in sorted(grouped.keys()):
+                for template in grouped[type_name]:
+                    # Add with type prefix for clarity
+                    display_name = f"{template.name} ({type_name})"
+                    self.template_combo.addItem(display_name, template.name)
+        
+        # Enable combo if we have templates
+        if self.template_combo.count() > 0:
+            self.template_combo.setEnabled(True)
+            self.button_box.button(QDialogButtonBox.Ok).setEnabled(True)
     
-    def _on_template_changed(self, template_name: str) -> None:
+    def _on_filter_changed(self, filter_type: str) -> None:
+        """Handle type filter change"""
+        self._load_templates(filter_type)
+    
+    def _on_template_changed(self, display_text: str) -> None:
         """Handle template selection change"""
-        if not template_name or template_name == "No templates available":
+        if not display_text or display_text == "No templates available":
             return
+        
+        # Get actual template name from combo data or parse display text
+        template_name = self.template_combo.currentData()
+        if not template_name:
+            # Fallback: parse from display text "name (type)"
+            template_name = display_text.split(" (")[0] if " (" in display_text else display_text
         
         try:
             # Load template

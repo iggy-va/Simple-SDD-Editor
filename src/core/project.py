@@ -1,7 +1,9 @@
 """Project model for Speckit Editor"""
 
 import threading
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
@@ -13,6 +15,57 @@ from .document import DocumentType, SpeckitDocument
 from .validator import ProjectValidator, ValidationResult
 
 logger = get_logger(__name__)
+
+
+class FileStatus(Enum):
+    """Git file status"""
+    UNMODIFIED = "unmodified"
+    MODIFIED = "modified"
+    ADDED = "added"
+    DELETED = "deleted"
+    RENAMED = "renamed"
+    UNTRACKED = "untracked"
+    CONFLICTED = "conflicted"
+
+
+@dataclass
+class GitCommit:
+    """Git commit information"""
+    sha: str
+    message: str
+    author: str
+    author_email: str
+    timestamp: datetime
+    parent_shas: List[str]
+
+
+@dataclass
+class GitFileStatus:
+    """Status of a single file in git"""
+    path: str
+    status: FileStatus
+    staged: bool = False
+
+
+@dataclass
+class GitStatus:
+    """Overall git repository status"""
+    files: List[GitFileStatus]
+    current_branch: Optional[str] = None
+    ahead: int = 0  # Commits ahead of remote
+    behind: int = 0  # Commits behind remote
+    
+    @property
+    def has_changes(self) -> bool:
+        return len(self.files) > 0
+    
+    @property
+    def staged_files(self) -> List[GitFileStatus]:
+        return [f for f in self.files if f.staged]
+    
+    @property
+    def unstaged_files(self) -> List[GitFileStatus]:
+        return [f for f in self.files if not f.staged]
 
 
 class SpeckitProject:
@@ -122,6 +175,378 @@ class SpeckitProject:
             self.created_at = datetime.fromtimestamp(self.root_path.stat().st_ctime)
         if not self.last_modified_at:
             self.last_modified_at = datetime.fromtimestamp(self.root_path.stat().st_mtime)
+    
+    def get_git_status(self) -> Optional[GitStatus]:
+        """Get current git status"""
+        if not self.git_repo:
+            return None
+        
+        try:
+            files = []
+            status_flags = self.git_repo.status()
+            
+            for filepath, flags in status_flags.items():
+                # Determine status
+                if flags & pygit2.GIT_STATUS_CONFLICTED:
+                    status = FileStatus.CONFLICTED
+                elif flags & (pygit2.GIT_STATUS_INDEX_NEW | pygit2.GIT_STATUS_WT_NEW):
+                    status = FileStatus.ADDED
+                elif flags & (pygit2.GIT_STATUS_INDEX_DELETED | pygit2.GIT_STATUS_WT_DELETED):
+                    status = FileStatus.DELETED
+                elif flags & (pygit2.GIT_STATUS_INDEX_MODIFIED | pygit2.GIT_STATUS_WT_MODIFIED):
+                    status = FileStatus.MODIFIED
+                elif flags & (pygit2.GIT_STATUS_INDEX_RENAMED | pygit2.GIT_STATUS_WT_RENAMED):
+                    status = FileStatus.RENAMED
+                else:
+                    status = FileStatus.UNTRACKED
+                
+                # Check if staged
+                staged = bool(flags & (pygit2.GIT_STATUS_INDEX_NEW | 
+                                     pygit2.GIT_STATUS_INDEX_MODIFIED | 
+                                     pygit2.GIT_STATUS_INDEX_DELETED | 
+                                     pygit2.GIT_STATUS_INDEX_RENAMED))
+                
+                files.append(GitFileStatus(
+                    path=filepath,
+                    status=status,
+                    staged=staged
+                ))
+            
+            # Get ahead/behind counts
+            ahead, behind = 0, 0
+            try:
+                if not self.git_repo.head_is_unborn:
+                    local_branch = self.git_repo.head
+                    upstream = local_branch.upstream
+                    if upstream:
+                        ahead, behind = self.git_repo.ahead_behind(
+                            local_branch.target, upstream.target
+                        )
+            except Exception:
+                pass
+            
+            return GitStatus(
+                files=files,
+                current_branch=self.current_branch,
+                ahead=ahead,
+                behind=behind
+            )
+        except Exception as e:
+            logger.error(f"Failed to get git status: {e}")
+            return None
+    
+    def stage_file(self, filepath: str) -> bool:
+        """Stage a file for commit"""
+        if not self.git_repo:
+            logger.warning("No git repository")
+            return False
+        
+        try:
+            self.git_repo.index.add(filepath)
+            self.git_repo.index.write()
+            logger.info(f"Staged file: {filepath}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to stage {filepath}: {e}")
+            return False
+    
+    def unstage_file(self, filepath: str) -> bool:
+        """Unstage a file"""
+        if not self.git_repo:
+            logger.warning("No git repository")
+            return False
+        
+        try:
+            # Reset to HEAD
+            self.git_repo.index.remove(filepath)
+            self.git_repo.index.write()
+            logger.info(f"Unstaged file: {filepath}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to unstage {filepath}: {e}")
+            return False
+    
+    def commit(self, message: str, author_name: Optional[str] = None, 
+               author_email: Optional[str] = None) -> Optional[str]:
+        """Create a git commit"""
+        if not self.git_repo:
+            logger.warning("No git repository")
+            return None
+        
+        try:
+            # Get author from config or use defaults
+            if not author_name or not author_email:
+                try:
+                    config = self.git_repo.config
+                    author_name = author_name or config['user.name']
+                    author_email = author_email or config['user.email']
+                except Exception:
+                    author_name = author_name or "Speckit User"
+                    author_email = author_email or "user@example.com"
+            
+            # Create signature
+            author = pygit2.Signature(author_name, author_email)
+            
+            # Get tree from index
+            tree = self.git_repo.index.write_tree()
+            
+            # Get parent commit
+            parents = []
+            if not self.git_repo.head_is_unborn:
+                parents = [self.git_repo.head.target]
+            
+            # Create commit
+            commit_sha = self.git_repo.create_commit(
+                'HEAD',
+                author,
+                author,
+                message,
+                tree,
+                parents
+            )
+            
+            logger.info(f"Created commit: {commit_sha}")
+            return str(commit_sha)
+        except Exception as e:
+            logger.error(f"Failed to commit: {e}")
+            return None
+    
+    def get_file_diff(self, filepath: str) -> Optional[str]:
+        """Get diff for a specific file"""
+        if not self.git_repo:
+            return None
+        
+        try:
+            # Get HEAD tree
+            if self.git_repo.head_is_unborn:
+                # No commits yet, show as new file
+                file_path = self.root_path / filepath
+                if file_path.exists():
+                    content = file_path.read_text(encoding='utf-8')
+                    lines = content.split('\n')
+                    diff_text = f"--- /dev/null\n+++ b/{filepath}\n"
+                    for i, line in enumerate(lines, 1):
+                        diff_text += f"+{i}: {line}\n"
+                    return diff_text
+                return None
+            
+            head_commit = self.git_repo.head.peel(pygit2.Commit)
+            head_tree = head_commit.tree
+            
+            # Get diff
+            diff = self.git_repo.diff(head_tree, flags=pygit2.GIT_DIFF_INCLUDE_UNTRACKED)
+            
+            # Find the patch for this file
+            for patch in diff:
+                if patch.delta.new_file.path == filepath:
+                    return patch.text
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get diff for {filepath}: {e}")
+            return None
+    
+    def get_branches(self) -> List[str]:
+        """Get list of all local branches"""
+        if not self.git_repo:
+            return []
+        
+        try:
+            return list(self.git_repo.branches.local)
+        except Exception as e:
+            logger.error(f"Failed to get branches: {e}")
+            return []
+    
+    def checkout_branch(self, branch_name: str) -> bool:
+        """Checkout a branch"""
+        if not self.git_repo:
+            logger.warning("No git repository")
+            return False
+        
+        try:
+            branch = self.git_repo.branches.get(branch_name)
+            if not branch:
+                logger.error(f"Branch not found: {branch_name}")
+                return False
+            
+            # Checkout the branch
+            self.git_repo.checkout(branch)
+            self.git_repo.set_head(branch.name)
+            self.current_branch = branch_name
+            logger.info(f"Checked out branch: {branch_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to checkout branch {branch_name}: {e}")
+            return False
+    
+    def create_branch(self, branch_name: str, checkout: bool = True) -> bool:
+        """Create a new branch"""
+        if not self.git_repo:
+            logger.warning("No git repository")
+            return False
+        
+        try:
+            # Get current commit
+            if self.git_repo.head_is_unborn:
+                logger.error("Cannot create branch: no commits yet")
+                return False
+            
+            commit = self.git_repo.head.peel(pygit2.Commit)
+            
+            # Create branch
+            self.git_repo.branches.local.create(branch_name, commit)
+            logger.info(f"Created branch: {branch_name}")
+            
+            # Optionally checkout
+            if checkout:
+                return self.checkout_branch(branch_name)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to create branch {branch_name}: {e}")
+            return False
+    
+    def push(self, remote_name: str = "origin", branch_name: Optional[str] = None) -> tuple[bool, str]:
+        """Push to remote repository
+        
+        Returns:
+            tuple[bool, str]: (success, message)
+        """
+        if not self.git_repo:
+            return False, "No git repository"
+        
+        try:
+            # Use current branch if not specified
+            if not branch_name:
+                branch_name = self.current_branch
+            
+            if not branch_name:
+                return False, "No branch to push"
+            
+            # Get remote
+            try:
+                remote = self.git_repo.remotes[remote_name]
+            except KeyError:
+                return False, f"Remote '{remote_name}' not found"
+            
+            # Get local branch
+            try:
+                local_branch = self.git_repo.branches.get(branch_name)
+                if not local_branch:
+                    return False, f"Branch '{branch_name}' not found"
+            except Exception:
+                return False, f"Branch '{branch_name}' not found"
+            
+            # Push
+            refspec = f"refs/heads/{branch_name}:refs/heads/{branch_name}"
+            try:
+                remote.push([refspec])
+                logger.info(f"Pushed {branch_name} to {remote_name}")
+                return True, f"Successfully pushed to {remote_name}"
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Push failed: {error_msg}")
+                return False, f"Push failed: {error_msg}"
+                
+        except Exception as e:
+            logger.error(f"Push operation failed: {e}")
+            return False, f"Push failed: {str(e)}"
+    
+    def pull(self, remote_name: str = "origin", branch_name: Optional[str] = None) -> tuple[bool, str]:
+        """Pull from remote repository
+        
+        Returns:
+            tuple[bool, str]: (success, message)
+        """
+        if not self.git_repo:
+            return False, "No git repository"
+        
+        try:
+            # Use current branch if not specified
+            if not branch_name:
+                branch_name = self.current_branch
+            
+            if not branch_name:
+                return False, "No branch to pull"
+            
+            # Get remote
+            try:
+                remote = self.git_repo.remotes[remote_name]
+            except KeyError:
+                return False, f"Remote '{remote_name}' not found"
+            
+            # Fetch first
+            try:
+                remote.fetch()
+                logger.info(f"Fetched from {remote_name}")
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Fetch failed: {error_msg}")
+                return False, f"Fetch failed: {error_msg}"
+            
+            # Get remote branch
+            remote_branch_name = f"{remote_name}/{branch_name}"
+            try:
+                remote_ref = self.git_repo.references.get(f"refs/remotes/{remote_branch_name}")
+                if not remote_ref:
+                    return False, f"Remote branch '{remote_branch_name}' not found"
+            except Exception:
+                return False, f"Remote branch '{remote_branch_name}' not found"
+            
+            # Get current HEAD
+            if self.git_repo.head_is_unborn:
+                return False, "Cannot pull: no commits yet"
+            
+            local_commit = self.git_repo.head.peel(pygit2.Commit)
+            remote_commit = remote_ref.peel(pygit2.Commit)
+            
+            # Check if already up to date
+            if local_commit.id == remote_commit.id:
+                logger.info("Already up to date")
+                return True, "Already up to date"
+            
+            # Perform merge
+            merge_result, _ = self.git_repo.merge_analysis(remote_commit.id)
+            
+            if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+                return True, "Already up to date"
+            elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+                # Fast-forward merge
+                self.git_repo.checkout_tree(remote_commit)
+                self.git_repo.head.set_target(remote_commit.id)
+                logger.info(f"Fast-forwarded to {remote_commit.id}")
+                return True, "Successfully pulled (fast-forward)"
+            elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
+                # Normal merge required
+                self.git_repo.merge(remote_commit.id)
+                
+                # Check for conflicts
+                if self.git_repo.index.conflicts:
+                    logger.warning("Merge conflicts detected")
+                    return False, "Merge conflicts detected - please resolve manually"
+                
+                # Create merge commit
+                user_sig = self.git_repo.default_signature
+                tree = self.git_repo.index.write_tree()
+                message = f"Merge {remote_branch_name} into {branch_name}"
+                
+                self.git_repo.create_commit(
+                    'HEAD',
+                    user_sig,
+                    user_sig,
+                    message,
+                    tree,
+                    [local_commit.id, remote_commit.id]
+                )
+                
+                logger.info(f"Merged {remote_branch_name}")
+                return True, "Successfully pulled (merge)"
+            else:
+                return False, "Cannot pull: unexpected merge analysis result"
+                
+        except Exception as e:
+            logger.error(f"Pull operation failed: {e}")
+            return False, f"Pull failed: {str(e)}"
     
     def scan_documents(self, pattern: str = "**/*.md") -> List[Path]:
         """Enumerate documents matching pattern (lazy, no parsing)"""
@@ -257,8 +682,38 @@ class SpeckitProject:
         return doc
     
     def save_document(self, doc: SpeckitDocument) -> None:
-        """Save document to disk"""
-        doc.path.write_text(doc.content, encoding="utf-8")
+        """Save document to disk with permission error handling"""
+        try:
+            # Ensure parent directory exists
+            doc.path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write document content
+            doc.path.write_text(doc.content, encoding="utf-8")
+            
+            # Update timestamp
+            doc.last_saved_at = datetime.now()
+            doc.is_dirty = False
+            
+        except PermissionError as e:
+            logger.error(f"Permission denied writing to {doc.path}: {e}")
+            raise PermissionError(
+                f"Permission denied: Cannot write to '{doc.path.name}'.\n\n"
+                f"This file may be:\n"
+                f"• Opened in another program\n"
+                f"• Read-only or protected\n"
+                f"• In a restricted directory\n\n"
+                f"Please check file permissions and try again."
+            ) from e
+        except OSError as e:
+            logger.error(f"File system error writing to {doc.path}: {e}")
+            raise OSError(
+                f"File system error: Cannot write to '{doc.path.name}'.\n\n"
+                f"Possible causes:\n"
+                f"• Disk is full\n"
+                f"• File path is too long\n"
+                f"• Network drive is unavailable\n\n"
+                f"Error: {str(e)}"
+            ) from e
 
 
 class FeatureBranch:

@@ -32,6 +32,10 @@ class SearchPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
+        # Accessibility
+        self.setAccessibleName("Search Panel")
+        self.setAccessibleDescription("Panel for searching text across project documents with various options")
+        
         self.project: Optional[SpeckitProject] = None
         
         # Create UI
@@ -43,10 +47,14 @@ class SearchPanel(QWidget):
         
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search...")
+        self.search_input.setAccessibleName("Search Query")
+        self.search_input.setAccessibleDescription("Enter text to search for in project documents")
         self.search_input.returnPressed.connect(self._on_search)
         input_layout.addWidget(self.search_input)
         
         self.search_button = QPushButton("Search")
+        self.search_button.setAccessibleName("Search Button")
+        self.search_button.setAccessibleDescription("Execute search with current query and options")
         self.search_button.clicked.connect(self._on_search)
         input_layout.addWidget(self.search_button)
         
@@ -59,14 +67,18 @@ class SearchPanel(QWidget):
         self.scope_combo = QComboBox()
         self.scope_combo.addItems(["Current Document", "Open Documents", "All Documents"])
         self.scope_combo.setCurrentIndex(2)  # Default to "All Documents"
+        self.scope_combo.setAccessibleName("Search Scope")
+        self.scope_combo.setAccessibleDescription("Select which documents to search in")
         options_layout.addWidget(self.scope_combo)
         
         # Case sensitive
         self.case_sensitive_check = QCheckBox("Case Sensitive")
+        self.case_sensitive_check.setAccessibleDescription("Enable case-sensitive search")
         options_layout.addWidget(self.case_sensitive_check)
         
         # Regex
         self.regex_check = QCheckBox("Regex")
+        self.regex_check.setAccessibleDescription("Enable regular expression search patterns")
         options_layout.addWidget(self.regex_check)
         
         options_layout.addStretch()
@@ -74,6 +86,8 @@ class SearchPanel(QWidget):
         
         # Results list
         self.results_list = QListWidget()
+        self.results_list.setAccessibleName("Search Results")
+        self.results_list.setAccessibleDescription("List of search results. Double-click to open a result.")
         self.results_list.itemDoubleClicked.connect(self._on_result_double_clicked)
         layout.addWidget(self.results_list)
         

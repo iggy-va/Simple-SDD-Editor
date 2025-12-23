@@ -1,5 +1,6 @@
 """Main window for Speckit Editor"""
 
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QSplitter,
@@ -19,11 +21,18 @@ from PySide6.QtWidgets import (
 )
 
 from ..core import SpeckitDocument, SpeckitProject
+from ..mcp.server import EmbeddedMCPServer
+from ..utils.config import AppSettings, ProjectSettings
 from ..utils.logging import get_logger
+from .ai_panel import AIPanel
 from .editor import SpeckitEditorWidget
+from .git_panel import GitPanel
+from .mcp_panel import MCPPanel
 from .navigator import ProjectNavigator
 from .search_panel import SearchPanel
+from .settings_dialog import SettingsDialog
 from .template_dialog import TemplateDialog
+from .template_manager import TemplateManagerWidget
 
 logger = get_logger(__name__)
 
@@ -37,6 +46,19 @@ class MainWindow(QMainWindow):
         self.project: Optional[SpeckitProject] = None
         self.open_editors: dict[Path, SpeckitEditorWidget] = {}  # Track open editors
         
+        # Load application settings
+        self.app_settings_path = Path.home() / ".speckit" / "settings.json"
+        self.app_settings = AppSettings.load(self.app_settings_path)
+        self.project_settings: Optional[ProjectSettings] = None
+        
+        # Initialize crash recovery
+        from ..utils.config import CrashRecovery
+        self.crash_recovery = CrashRecovery()
+        
+        # Defer MCP server initialization (lazy loading)
+        self.mcp_server: Optional[EmbeddedMCPServer] = None
+        self._mcp_initialized = False
+        
         self._setup_window()
         self._create_menus()
         self._create_toolbar()
@@ -44,13 +66,113 @@ class MainWindow(QMainWindow):
         self._create_central_widget()
         self._apply_styling()
         
-        # Auto-save timer (30 seconds default)
+        # Defer auto-save timer (start after first document is opened)
         self.auto_save_timer = QTimer(self)
         self.auto_save_timer.timeout.connect(self._auto_save_all)
         self.auto_save_interval = 30000  # 30 seconds in milliseconds
-        self.auto_save_timer.start(self.auto_save_interval)
+        # Don't start until needed
+        
+        # Auto-save unsaved documents for crash recovery (every 10 seconds)
+        self.recovery_timer = QTimer(self)
+        self.recovery_timer.timeout.connect(self._save_recovery_cache)
+        self.recovery_timer.start(10000)  # 10 seconds
+        
+        # Defer MCP and welcome screen initialization until after window is shown
+        QTimer.singleShot(100, self._deferred_initialization)
         
         logger.info("MainWindow initialized")
+    
+    def _deferred_initialization(self) -> None:
+        """Perform deferred initialization after window is shown (for faster startup)"""
+        # Check for crash recovery
+        self._check_crash_recovery()
+        
+        # Initialize MCP server in background
+        self._init_mcp_server()
+        
+        # Show welcome tab if no project is open
+        if not self.project:
+            self._show_welcome_tab()
+    
+    def _check_crash_recovery(self) -> None:
+        """Check for recoverable documents from previous crash"""
+        recoverable = self.crash_recovery.get_recoverable_documents()
+        
+        if not recoverable:
+            return
+        
+        # Ask user if they want to recover
+        msg = f"Found {len(recoverable)} unsaved document(s) from previous session.\n\n"
+        msg += "Would you like to recover them?"
+        
+        reply = QMessageBox.question(
+            self,
+            "Crash Recovery",
+            msg,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+        
+        if reply == QMessageBox.Yes:
+            for original_path, recovery_data in recoverable.items():
+                try:
+                    content = recovery_data["content"]
+                    path = Path(original_path)
+                    
+                    # Create document with recovered content
+                    doc = SpeckitDocument(
+                        path=path,
+                        relative_path=path.name,
+                        content=content
+                    )
+                    doc.is_dirty = True  # Mark as modified
+                    
+                    self._open_document_in_editor(doc)
+                    logger.info(f"Recovered document: {path}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to recover document {original_path}: {e}")
+        
+        # Clear recovery cache after offering recovery
+        if reply == QMessageBox.No:
+            self.crash_recovery.clear_all()
+    
+    def _save_recovery_cache(self) -> None:
+        """Save unsaved documents to crash recovery cache"""
+        for path, editor in self.open_editors.items():
+            if editor.document().isModified():
+                content = editor.get_content()
+                self.crash_recovery.save_unsaved_document(path, content)
+    
+    def _init_mcp_server(self) -> None:
+        """Initialize MCP server (lazy loading)"""
+        if self._mcp_initialized:
+            return
+        
+        try:
+            # Determine cache directory
+            if self.project:
+                cache_dir = self.project.root_path / ".specify" / "cache"
+            else:
+                cache_dir = Path.home() / ".speckit_cache"
+            
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create and start server
+            self.mcp_server = EmbeddedMCPServer(cache_dir)
+            self.mcp_server.start()
+            
+            # Update panels with MCP server
+            if hasattr(self, 'mcp_panel'):
+                self.mcp_panel.set_mcp_server(self.mcp_server)
+            if hasattr(self, 'ai_panel'):
+                self.ai_panel.set_mcp_server(self.mcp_server)
+            
+            self._mcp_initialized = True
+            logger.info(f"MCP server started with cache dir: {cache_dir}")
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP server: {e}")
+            self.mcp_server = None
     
     def _setup_window(self) -> None:
         """Configure main window properties"""
@@ -143,6 +265,76 @@ class MainWindow(QMainWindow):
         find_action.triggered.connect(self._on_find)
         edit_menu.addAction(find_action)
         
+        # Git menu
+        git_menu = menubar.addMenu("&Git")
+        
+        # Commit
+        commit_action = QAction("&Commit...", self)
+        commit_action.setShortcut(QKeySequence("Ctrl+K"))
+        commit_action.setStatusTip("Create git commit")
+        commit_action.triggered.connect(self._on_git_commit_shortcut)
+        git_menu.addAction(commit_action)
+        
+        git_menu.addSeparator()
+        
+        # Push
+        push_action = QAction("&Push", self)
+        push_action.setShortcut(QKeySequence("Ctrl+Shift+P"))
+        push_action.setStatusTip("Push to remote")
+        push_action.triggered.connect(self._on_git_push)
+        git_menu.addAction(push_action)
+        
+        # Pull
+        pull_action = QAction("Pu&ll", self)
+        pull_action.setShortcut(QKeySequence("Ctrl+Shift+L"))
+        pull_action.setStatusTip("Pull from remote")
+        pull_action.triggered.connect(self._on_git_pull)
+        git_menu.addAction(pull_action)
+        
+        git_menu.addSeparator()
+        
+        # Show Diff
+        diff_action = QAction("Show &Diff", self)
+        diff_action.setShortcut(QKeySequence("Ctrl+D"))
+        diff_action.setStatusTip("Show git diff")
+        diff_action.triggered.connect(self._on_git_diff)
+        git_menu.addAction(diff_action)
+        
+        # AI menu
+        ai_menu = menubar.addMenu("&AI")
+        
+        # AI Chat
+        ai_chat_action = QAction("AI &Chat", self)
+        ai_chat_action.setShortcut(QKeySequence("Ctrl+Shift+A"))
+        ai_chat_action.setStatusTip("Open AI assistant chat")
+        ai_chat_action.triggered.connect(self._on_ai_chat)
+        ai_menu.addAction(ai_chat_action)
+        
+        # AI Completion (inline)
+        ai_completion_action = QAction("AI &Completion", self)
+        ai_completion_action.setShortcut(QKeySequence("Ctrl+Space"))
+        ai_completion_action.setStatusTip("Get AI completion at cursor")
+        ai_completion_action.triggered.connect(self._on_ai_completion)
+        ai_menu.addAction(ai_completion_action)
+        
+        # Tools menu
+        tools_menu = menubar.addMenu("&Tools")
+        
+        # Manage Templates
+        manage_templates_action = QAction("&Manage Templates", self)
+        manage_templates_action.setStatusTip("View, edit, and manage document templates")
+        manage_templates_action.triggered.connect(self._on_manage_templates)
+        tools_menu.addAction(manage_templates_action)
+        
+        tools_menu.addSeparator()
+        
+        # Preferences/Settings
+        preferences_action = QAction("&Preferences...", self)
+        preferences_action.setShortcut(QKeySequence("Ctrl+,"))
+        preferences_action.setStatusTip("Configure application settings")
+        preferences_action.triggered.connect(self._on_preferences)
+        tools_menu.addAction(preferences_action)
+        
         # Window menu
         window_menu = menubar.addMenu("&Window")
         
@@ -200,6 +392,12 @@ class MainWindow(QMainWindow):
         """Create status bar"""
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+        
+        # Git status label (permanent widget on right side)
+        self.git_status_label = QLabel("No repo")
+        self.git_status_label.setStyleSheet("padding: 0 10px;")
+        self.status_bar.addPermanentWidget(self.git_status_label)
+        
         self.status_bar.showMessage("Ready")
     
     def _create_central_widget(self) -> None:
@@ -219,9 +417,14 @@ class MainWindow(QMainWindow):
         self.navigator = ProjectNavigator()
         self.navigator.doubleClicked.connect(self._on_navigator_file_double_clicked)
         self.navigator.fileChanged.connect(self._on_external_file_changed)
+        
+        # Accessibility
+        self.navigator.setAccessibleName("Project Navigator")
+        self.navigator.setAccessibleDescription("Tree view showing all files and folders in the current project")
+        
         self.splitter.addWidget(self.navigator)
         
-        # Right side: vertical splitter for tabs and search
+        # Right side: vertical splitter for tabs and bottom panels
         right_splitter = QSplitter(Qt.Vertical)
         
         # Tab widget for open documents (top right)
@@ -235,15 +438,43 @@ class MainWindow(QMainWindow):
         self.tab_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tab_widget.customContextMenuRequested.connect(self._show_tab_context_menu)
         
+        # Accessibility
+        self.tab_widget.setAccessibleName("Open Documents")
+        self.tab_widget.setAccessibleDescription("Tab widget containing all currently open documents")
+        
         right_splitter.addWidget(self.tab_widget)
         
-        # Search panel (bottom right, initially hidden)
+        # Bottom panel: tabbed widget for search, git, and MCP
+        self.bottom_tabs = QTabWidget()
+        
+        # Accessibility
+        self.bottom_tabs.setAccessibleName("Tool Panels")
+        self.bottom_tabs.setAccessibleDescription("Tab widget for search, git, MCP, and AI assistant panels")
+        
+        # Search panel
         self.search_panel = SearchPanel()
         self.search_panel.resultSelected.connect(self._on_search_result_selected)
-        self.search_panel.setVisible(False)  # Hidden by default
-        right_splitter.addWidget(self.search_panel)
+        self.bottom_tabs.addTab(self.search_panel, "Search")
         
-        # Set vertical splitter sizes (80% tabs, 20% search when visible)
+        # Git panel
+        self.git_panel = GitPanel()
+        self.git_panel.commitRequested.connect(self._on_git_commit)
+        self.bottom_tabs.addTab(self.git_panel, "Git")
+        
+        # MCP panel (server will be set in deferred initialization)
+        self.mcp_panel = MCPPanel()
+        self.bottom_tabs.addTab(self.mcp_panel, "MCP")
+        
+        # AI panel (server will be set in deferred initialization)
+        self.ai_panel = AIPanel()
+        self.ai_panel.promptSent.connect(self._on_ai_prompt)
+        self.bottom_tabs.addTab(self.ai_panel, "AI Assistant")
+        
+        # Initially hidden
+        self.bottom_tabs.setVisible(False)
+        right_splitter.addWidget(self.bottom_tabs)
+        
+        # Set vertical splitter sizes (80% tabs, 20% bottom panels when visible)
         right_splitter.setSizes([800, 200])
         
         self.splitter.addWidget(right_splitter)
@@ -253,21 +484,89 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(self.splitter)
         
-        # Show welcome message
-        self._show_welcome_tab()
+        # Welcome message will be shown in deferred initialization
     
     def _show_welcome_tab(self) -> None:
         """Show welcome tab when no project is open"""
-        from PySide6.QtWidgets import QLabel
+        from PySide6.QtWidgets import QLabel, QPushButton
         
         welcome_widget = QWidget()
         welcome_layout = QVBoxLayout(welcome_widget)
+        welcome_layout.setAlignment(Qt.AlignCenter)
+        welcome_layout.setSpacing(20)
         
-        label = QLabel("Welcome to Speckit Editor\n\nOpen a project to get started")
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 18px; color: #666;")
+        # Title
+        title_label = QLabel("Welcome to Speckit Editor")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
+        welcome_layout.addWidget(title_label)
         
-        welcome_layout.addWidget(label)
+        # Subtitle
+        subtitle_label = QLabel("A specialized IDE for Speckit project documentation")
+        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setStyleSheet("font-size: 14px; color: #666;")
+        welcome_layout.addWidget(subtitle_label)
+        
+        welcome_layout.addSpacing(40)
+        
+        # Quick start actions
+        actions_widget = QWidget()
+        actions_layout = QVBoxLayout(actions_widget)
+        actions_layout.setSpacing(15)
+        
+        # Open project button
+        open_project_btn = QPushButton("📁 Open Existing Project")
+        open_project_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 14px;
+                padding: 12px 24px;
+                background-color: #0078d4;
+                color: white;
+                border: none;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #106ebe;
+            }
+        """)
+        open_project_btn.clicked.connect(self._on_open_project)
+        actions_layout.addWidget(open_project_btn)
+        
+        # New project button (placeholder)
+        new_project_btn = QPushButton("✨ Create New Project")
+        new_project_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 14px;
+                padding: 12px 24px;
+                background-color: #f0f0f0;
+                color: #333;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #e5e5e5;
+            }
+        """)
+        new_project_btn.clicked.connect(self._on_new_project)
+        actions_layout.addWidget(new_project_btn)
+        
+        welcome_layout.addWidget(actions_widget)
+        
+        welcome_layout.addSpacing(40)
+        
+        # Getting started tips
+        tips_label = QLabel(
+            "💡 <b>Getting Started:</b><br><br>"
+            "• Open a Speckit project folder containing .specify/ directory<br>"
+            "• Browse specs, templates, and memory files in the navigator<br>"
+            "• Use Ctrl+F to search across all documents<br>"
+            "• Git integration available in the Git panel below<br>"
+            "• Configure MCP integrations in the MCP panel"
+        )
+        tips_label.setAlignment(Qt.AlignCenter)
+        tips_label.setStyleSheet("font-size: 12px; color: #666; line-height: 1.6;")
+        tips_label.setTextFormat(Qt.RichText)
+        welcome_layout.addWidget(tips_label)
         
         self.tab_widget.addTab(welcome_widget, "Welcome")
     
@@ -434,6 +733,16 @@ class MainWindow(QMainWindow):
             logger.info(f"Loading project: {project_path}")
             self.project = SpeckitProject(project_path)
             
+            # Check for large project and show performance warning
+            self._check_project_performance()
+            
+            # Load project settings
+            settings_path = self.project.root / ".specify" / "settings.json"
+            self.project_settings = ProjectSettings.load(settings_path)
+            
+            # Apply settings
+            self._apply_settings()
+            
             # Update window title
             self.setWindowTitle(f"Speckit Editor - {self.project.name}")
             
@@ -446,6 +755,12 @@ class MainWindow(QMainWindow):
             # Set project for search panel
             self.search_panel.set_project(self.project)
             
+            # Set project for git panel
+            self.git_panel.set_project(self.project)
+            
+            # Update git status
+            self._update_git_status()
+            
             logger.info(f"Project loaded successfully: {self.project.name}")
         except Exception as e:
             logger.error(f"Failed to load project: {e}")
@@ -454,6 +769,59 @@ class MainWindow(QMainWindow):
                 "Error Loading Project",
                 f"Failed to load project:\n{str(e)}"
             )
+    
+    def _check_project_performance(self) -> None:
+        """Check project size and show performance warnings if needed"""
+        if not self.project:
+            return
+        
+        # Count total files in project
+        total_files = 0
+        large_files = []
+        
+        for file_path in self.project.root.rglob("*"):
+            if file_path.is_file() and not any(
+                part.startswith(".") for part in file_path.parts
+            ):
+                total_files += 1
+                
+                # Check for large files (>5MB)
+                if file_path.stat().st_size > 5 * 1024 * 1024:
+                    large_files.append((file_path.name, file_path.stat().st_size / (1024*1024)))
+        
+        # Show warning for large projects (>1000 files)
+        if total_files > 1000:
+            msg = f"⚠️ Large Project Detected\n\n"
+            msg += f"This project contains {total_files} files.\n"
+            msg += f"Some operations may be slower than usual.\n\n"
+            msg += f"Recommendations:\n"
+            msg += f"• Close unused documents\n"
+            msg += f"• Consider splitting into smaller projects\n"
+            msg += f"• Disable auto-indexing if not needed"
+            
+            QMessageBox.warning(
+                self,
+                "Performance Warning",
+                msg
+            )
+            logger.warning(f"Large project loaded: {total_files} files")
+        
+        # Show warning for large files
+        if large_files:
+            msg = f"⚠️ Large Files Detected\n\n"
+            msg += f"The following files are very large:\n\n"
+            for name, size in large_files[:5]:  # Show first 5
+                msg += f"• {name}: {size:.1f} MB\n"
+            if len(large_files) > 5:
+                msg += f"\n...and {len(large_files) - 5} more\n"
+            msg += f"\nEditing these files may be slower."
+            
+            QMessageBox.information(
+                self,
+                "Large Files",
+                msg
+            )
+            logger.info(f"Large files in project: {len(large_files)}")
     
     def _on_save(self) -> None:
         """Handle Save action"""
@@ -504,9 +872,32 @@ class MainWindow(QMainWindow):
                     self.tab_widget.setTabText(i, title)
                     break
             
-            self.status_bar.showMessage(f"Saved: {editor.document_path.name}", 2000)
-            logger.info(f"Document saved: {editor.document_path}")
+            # Clear crash recovery cache for successfully saved document
+            self.crash_recovery.clear_recovery(str(editor.document_path.absolute()))
+            
+            self.status_bar.showMessage(f"Saved: {editor.document_path.name}", 3000)
+            logger.info(f"Saved document: {editor.document_path}")
             return True
+            
+        except PermissionError as e:
+            # Show actionable error message for permission issues
+            QMessageBox.critical(
+                self,
+                "Permission Denied",
+                str(e)
+            )
+            logger.error(f"Permission error saving document: {e}")
+            return False
+            
+        except OSError as e:
+            # Show actionable error message for file system issues
+            QMessageBox.critical(
+                self,
+                "File System Error",
+                str(e)
+            )
+            logger.error(f"OS error saving document: {e}")
+            return False
             
         except Exception as e:
             logger.error(f"Failed to save document: {e}")
@@ -531,17 +922,15 @@ class MainWindow(QMainWindow):
         """Handle Find action (Ctrl+F)"""
         logger.debug("Find requested")
         
-        # Toggle search panel visibility
-        self.search_panel.setVisible(not self.search_panel.isVisible())
+        # Show bottom tabs and switch to search
+        self.bottom_tabs.setVisible(True)
+        self.bottom_tabs.setCurrentWidget(self.search_panel)
         
-        if self.search_panel.isVisible():
-            # Focus on search input
-            self.search_panel.search_input.setFocus()
-            self.search_panel.search_input.selectAll()
-            
-            logger.info("Search panel shown")
-        else:
-            logger.info("Search panel hidden")
+        # Focus on search input
+        self.search_panel.search_input.setFocus()
+        self.search_panel.search_input.selectAll()
+        
+        logger.info("Search panel shown")
     
     def _on_refresh_project(self) -> None:
         """Handle project refresh action (F5)"""
@@ -784,7 +1173,175 @@ class MainWindow(QMainWindow):
         # Track editor
         self.open_editors[document.path] = editor
         
+        # Start auto-save timer on first document (deferred until actually needed)
+        if len(self.open_editors) == 1 and not self.auto_save_timer.isActive():
+            self.auto_save_timer.start(self.auto_save_interval)
+        
+        # Check for template upgrade opportunity
+        self._check_template_upgrade(document)
+        
         logger.info(f"Opened document in editor: {document.path}")
+    
+    def _check_template_upgrade(self, document: SpeckitDocument) -> None:
+        """Check if document could benefit from template upgrade"""
+        if not self.project:
+            return
+        
+        try:
+            from ..core.template import TemplateManager
+            
+            templates_dir = self.project.root / ".specify" / "templates"
+            if not templates_dir.exists():
+                return
+            
+            template_manager = TemplateManager(templates_dir)
+            
+            # Determine document template type (basic heuristic from filename)
+            doc_name = document.path.stem.lower()
+            template_type = None
+            
+            if "spec" in doc_name or "specification" in doc_name:
+                template_type = "spec-template"
+            elif "plan" in doc_name:
+                template_type = "plan-template"
+            elif "task" in doc_name:
+                template_type = "tasks-template"
+            
+            if not template_type:
+                return
+            
+            # Check if newer template versions exist
+            versions = template_manager.get_template_versions(template_type)
+            if len(versions) <= 1:
+                return  # No newer versions available
+            
+            # Get latest version
+            latest_template = versions[0]
+            
+            # Prompt user for upgrade
+            reply = QMessageBox.question(
+                self,
+                "Template Upgrade Available",
+                f"A newer version of the '{template_type}' template is available:\n\n"
+                f"Latest: {latest_template.name}\n"
+                f"Updated: {latest_template.updated_at.strftime('%Y-%m-%d') if latest_template.updated_at else 'Unknown'}\n\n"
+                f"Would you like to upgrade this document to the new template?\n\n"
+                f"Note: A backup will be created automatically.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+            )
+            
+            if reply == QMessageBox.Yes:
+                self._upgrade_document_template(document, latest_template.name, template_manager)
+        
+        except Exception as e:
+            logger.error(f"Error checking template upgrade: {e}")
+    
+    def _upgrade_document_template(self, document: SpeckitDocument, 
+                                   new_template_name: str,
+                                   template_manager) -> None:
+        """Upgrade document to new template version"""
+        try:
+            # Perform migration
+            success, messages = template_manager.migrate_document_to_template(
+                document.path,
+                new_template_name,
+                create_backup=True
+            )
+            
+            if success:
+                # Reload document in editor
+                if document.path in self.open_editors:
+                    editor = self.open_editors[document.path]
+                    
+                    # Reload from disk
+                    updated_document = SpeckitDocument.load(document.path)
+                    editor.load_document(updated_document)
+                
+                # Show success message with details
+                message_text = "Document upgraded successfully!\n\n"
+                message_text += "\n".join(messages)
+                
+                QMessageBox.information(
+                    self,
+                    "Template Upgrade Complete",
+                    message_text
+                )
+            else:
+                # Show error with rollback option
+                self._handle_migration_failure(document, messages)
+        
+        except Exception as e:
+            logger.error(f"Template upgrade failed: {e}")
+            self._handle_migration_failure(document, [str(e)])
+    
+    def _handle_migration_failure(self, document: SpeckitDocument, 
+                                  error_messages: List[str]) -> None:
+        """Handle migration failure and offer rollback"""
+        error_text = "Template migration failed:\n\n"
+        error_text += "\n".join(error_messages)
+        error_text += "\n\nWould you like to restore from backup?"
+        
+        reply = QMessageBox.question(
+            self,
+            "Migration Failed",
+            error_text,
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            self._rollback_migration(document)
+    
+    def _rollback_migration(self, document: SpeckitDocument) -> None:
+        """Rollback to backup after failed migration"""
+        try:
+            backup_dir = document.path.parent / ".backups"
+            if not backup_dir.exists():
+                QMessageBox.warning(
+                    self,
+                    "No Backup Found",
+                    "No backup directory found. Cannot rollback."
+                )
+                return
+            
+            # Find most recent backup for this document
+            import glob
+            pattern = f"{document.path.stem}_backup_*{document.path.suffix}"
+            backups = list(backup_dir.glob(pattern))
+            
+            if not backups:
+                QMessageBox.warning(
+                    self,
+                    "No Backup Found",
+                    f"No backup found for {document.path.name}"
+                )
+                return
+            
+            # Sort by modification time, get most recent
+            latest_backup = max(backups, key=lambda p: p.stat().st_mtime)
+            
+            # Restore from backup
+            import shutil
+            shutil.copy2(latest_backup, document.path)
+            
+            # Reload in editor
+            if document.path in self.open_editors:
+                editor = self.open_editors[document.path]
+                restored_document = SpeckitDocument.load(document.path)
+                editor.load_document(restored_document)
+            
+            QMessageBox.information(
+                self,
+                "Rollback Complete",
+                f"Document restored from backup:\n{latest_backup.name}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Rollback failed: {e}")
+            QMessageBox.critical(
+                self,
+                "Rollback Failed",
+                f"Failed to restore from backup:\n{str(e)}"
+            )
     
     def _on_editor_modified(self, editor: SpeckitEditorWidget) -> None:
         """Handle editor content modification"""
@@ -836,6 +1393,25 @@ class MainWindow(QMainWindow):
                     content=path.read_text(encoding='utf-8')
                 )
                 self._open_document_in_editor(doc)
+                
+        except PermissionError as e:
+            # Show actionable error message for permission issues
+            QMessageBox.critical(
+                self,
+                "Permission Denied",
+                str(e)
+            )
+            logger.error(f"Permission error opening file: {e}")
+            
+        except OSError as e:
+            # Show actionable error message for file system issues
+            QMessageBox.critical(
+                self,
+                "File System Error",
+                str(e)
+            )
+            logger.error(f"OS error opening file: {e}")
+            
         except Exception as e:
             logger.error(f"Failed to open file from navigator: {e}")
             QMessageBox.critical(
@@ -865,3 +1441,368 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("✓ Valid", 3000)
         else:
             self.status_bar.showMessage(f"✗ {len(result.errors)} errors, {len(result.warnings)} warnings", 5000)
+    
+    def _on_git_commit(self, message: str) -> None:
+        """Handle git commit request"""
+        if not self.project:
+            logger.warning("No project loaded for commit")
+            QMessageBox.warning(
+                self,
+                "No Project",
+                "No project loaded"
+            )
+            return
+        
+        commit_sha = self.project.commit(message)
+        if commit_sha:
+            logger.info(f"Created commit: {commit_sha}")
+            self.status_bar.showMessage(f"Committed: {message[:50]}...", 3000)
+            # Refresh git panel
+            if hasattr(self, 'git_panel'):
+                self.git_panel._refresh_status()
+            # Update git status in status bar
+            self._update_git_status()
+        else:
+            logger.error("Failed to create commit")
+            QMessageBox.warning(
+                self,
+                "Commit Failed",
+                "Failed to create commit. Check that files are staged."
+            )
+            self.status_bar.showMessage("Commit failed", 3000)
+    
+    def _on_git_commit_shortcut(self) -> None:
+        """Handle commit keyboard shortcut"""
+        # Switch to git tab and focus commit message
+        if hasattr(self, 'bottom_tabs') and hasattr(self, 'git_panel'):
+            for i in range(self.bottom_tabs.count()):
+                if self.bottom_tabs.widget(i) == self.git_panel:
+                    self.bottom_tabs.setCurrentIndex(i)
+                    self.git_panel.commit_message.setFocus()
+                    break
+    
+    def _on_git_push(self) -> None:
+        """Handle git push"""
+        if hasattr(self, 'git_panel'):
+            self.git_panel._on_push()
+    
+    def _on_git_pull(self) -> None:
+        """Handle git pull"""
+        if hasattr(self, 'git_panel'):
+            self.git_panel._on_pull()
+    
+    def _on_git_diff(self) -> None:
+        """Handle show diff"""
+        # Switch to git tab
+        if hasattr(self, 'bottom_tabs') and hasattr(self, 'git_panel'):
+            for i in range(self.bottom_tabs.count()):
+                if self.bottom_tabs.widget(i) == self.git_panel:
+                    self.bottom_tabs.setCurrentIndex(i)
+                    break
+    
+    def _update_git_status(self) -> None:
+        """Update git status in status bar"""
+        if not self.project or not self.project.git_repo:
+            self.git_status_label.setText("No repo")
+            return
+        
+        try:
+            git_status = self.project.get_git_status()
+            if not git_status:
+                self.git_status_label.setText("No repo")
+                return
+            
+            # Build status text
+            parts = []
+            
+            # Branch name
+            if git_status.current_branch:
+                parts.append(f"⎇ {git_status.current_branch}")
+            
+            # Ahead/behind
+            if git_status.ahead > 0:
+                parts.append(f"↑{git_status.ahead}")
+            if git_status.behind > 0:
+                parts.append(f"↓{git_status.behind}")
+            
+            # Changes
+            if git_status.has_changes:
+                change_count = len(git_status.files)
+                parts.append(f"✎ {change_count}")
+            
+            status_text = " ".join(parts) if parts else "No changes"
+            self.git_status_label.setText(status_text)
+            
+        except Exception as e:
+            logger.error(f"Failed to update git status: {e}")
+            self.git_status_label.setText("Error")
+    
+    def _on_ai_chat(self) -> None:
+        """Handle AI chat shortcut"""
+        # Switch to AI tab and start session
+        if hasattr(self, 'bottom_tabs') and hasattr(self, 'ai_panel'):
+            for i in range(self.bottom_tabs.count()):
+                if self.bottom_tabs.widget(i) == self.ai_panel:
+                    self.bottom_tabs.setCurrentIndex(i)
+                    self.bottom_tabs.setVisible(True)
+                    
+                    # Start session with current document context
+                    current_widget = self.tab_widget.currentWidget()
+                    if isinstance(current_widget, SpeckitEditorWidget):
+                        self.ai_panel.start_session(
+                            document_path=current_widget.document_path,
+                            context_type="chat"
+                        )
+                    else:
+                        self.ai_panel.start_session(context_type="chat")
+                    
+                    self.ai_panel.prompt_input.setFocus()
+                    break
+    
+    def _on_ai_completion(self) -> None:
+        """Handle AI completion shortcut"""
+        current_widget = self.tab_widget.currentWidget()
+        if not isinstance(current_widget, SpeckitEditorWidget):
+            return
+        
+        # Extract intelligent context from editor
+        context = current_widget.extract_ai_context(context_type="completion")
+        
+        # Log context for debugging
+        logger.info(f"AI completion requested - Doc type: {context['document_type']}, "
+                   f"Section: {context['current_section']}, Cursor: {context['cursor_position']}")
+        
+        # For now, show a placeholder suggestion based on document type
+        # TODO: Connect to actual MCP AI service with full context
+        if context['document_type'] == "specification":
+            placeholder_suggestion = " [AI-generated requirement here]"
+        elif context['document_type'] == "plan":
+            placeholder_suggestion = " [AI-generated implementation plan here]"
+        elif context['document_type'] == "tasks":
+            placeholder_suggestion = " [AI-generated task here]"
+        else:
+            placeholder_suggestion = " [AI-generated content here]"
+        
+        current_widget.show_ai_suggestion(placeholder_suggestion, context['cursor_position'])
+    
+    def _on_ai_prompt(self, prompt: str) -> None:
+        """Handle AI prompt submission"""
+        logger.info(f"AI prompt: {prompt}")
+        # TODO: Connect to MCP AI service to process the prompt
+        # For now, this is handled within AIPanel with a placeholder response
+    
+    def _on_preferences(self) -> None:
+        """Open preferences/settings dialog"""
+        dialog = SettingsDialog(
+            app_settings=self.app_settings,
+            project_settings=self.project_settings,
+            parent=self
+        )
+        
+        if dialog.exec():
+            # Save application settings
+            self.app_settings.save(self.app_settings_path)
+            
+            # Save project settings if project is loaded
+            if self.project and self.project_settings:
+                settings_path = self.project.root / ".specify" / "settings.json"
+                self.project_settings.save(settings_path)
+            
+            # Apply new settings
+            self._apply_settings()
+            
+            QMessageBox.information(
+                self,
+                "Settings Saved",
+                "Your settings have been saved successfully."
+            )
+    
+    def _apply_settings(self) -> None:
+        """Apply current settings to the UI"""
+        # Apply font settings to all editors
+        from PySide6.QtGui import QFont
+        font = QFont(self.app_settings.font_family, self.app_settings.font_size)
+        
+        for editor in self.open_editors.values():
+            editor.setFont(font)
+        
+        # Apply auto-save interval if project settings exist
+        if self.project_settings:
+            if self.project_settings.auto_save_enabled:
+                self.auto_save_interval = self.project_settings.auto_save_interval * 1000
+                self.auto_save_timer.start(self.auto_save_interval)
+            else:
+                self.auto_save_timer.stop()
+            
+            # Apply accessibility settings
+            self._apply_accessibility_settings()
+        
+        logger.info("Settings applied to UI")
+    
+    def _apply_accessibility_settings(self) -> None:
+        """Apply accessibility settings including focus indicators"""
+        if not self.project_settings:
+            return
+        
+        # Build focus indicator style based on settings
+        focus_style = ""
+        if self.project_settings.focus_indicators:
+            focus_style = """
+            /* Enhanced focus indicators for accessibility */
+            *:focus {
+                outline: 2px solid #0078d4;
+                outline-offset: 2px;
+            }
+            
+            QPushButton:focus {
+                border: 2px solid #0078d4;
+                outline: none;
+            }
+            
+            QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+                border: 2px solid #0078d4;
+            }
+            
+            QTreeView:focus, QListView:focus {
+                border: 2px solid #0078d4;
+            }
+            
+            QTabBar::tab:focus {
+                outline: 2px solid #0078d4;
+                outline-offset: -2px;
+            }
+            """
+        
+        # Get current stylesheet and update it
+        current_style = self.styleSheet()
+        
+        # Remove old focus indicator styles
+        import re
+        current_style = re.sub(
+            r'/\*\s*Enhanced focus indicators.*?\*/.*?\}',
+            '',
+            current_style,
+            flags=re.DOTALL
+        )
+        current_style = re.sub(
+            r'/\*\s*Focus indicators for accessibility.*?\*/.*?\*:focus\s*\{[^}]*\}',
+            '',
+            current_style,
+            flags=re.DOTALL
+        )
+        
+        # Add new focus indicator styles
+        self.setStyleSheet(current_style + focus_style)
+        
+        logger.info(f"Accessibility settings applied: focus_indicators={self.project_settings.focus_indicators}")
+    
+    def _on_manage_templates(self) -> None:
+        """Open template manager dialog"""
+        if not self.project:
+            QMessageBox.information(
+                self,
+                "No Project",
+                "Please open a project first to manage templates."
+            )
+            return
+        
+        templates_dir = self.project.root / ".specify" / "templates"
+        
+        # Create and show template manager dialog
+        dialog = TemplateManagerWidget(templates_dir, parent=self)
+        dialog.exec()
+    
+    
+    def keyPressEvent(self, event) -> None:
+        """Handle keyboard navigation"""
+        if not self.project_settings or not self.project_settings.keyboard_navigation:
+            super().keyPressEvent(event)
+            return
+        
+        from PySide6.QtGui import QKeyEvent
+        
+        # Ctrl+Tab: Next tab
+        if event.key() == Qt.Key.Key_Tab and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            current = self.right_panel.currentIndex()
+            next_index = (current + 1) % self.right_panel.count()
+            self.right_panel.setCurrentIndex(next_index)
+            event.accept()
+            return
+        
+        # Ctrl+Shift+Tab: Previous tab
+        if event.key() == Qt.Key.Key_Tab and event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier):
+            current = self.right_panel.currentIndex()
+            prev_index = (current - 1) % self.right_panel.count()
+            self.right_panel.setCurrentIndex(prev_index)
+            event.accept()
+            return
+        
+        # Ctrl+1 through Ctrl+5: Jump to specific tab
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            key = event.key()
+            tab_mapping = {
+                Qt.Key.Key_1: 0,  # Editor
+                Qt.Key.Key_2: 1,  # Git
+                Qt.Key.Key_3: 2,  # MCP
+                Qt.Key.Key_4: 3,  # AI
+                Qt.Key.Key_5: 4,  # Search
+            }
+            
+            if key in tab_mapping:
+                tab_index = tab_mapping[key]
+                if tab_index < self.right_panel.count():
+                    self.right_panel.setCurrentIndex(tab_index)
+                    event.accept()
+                    return
+        
+        # Ctrl+B: Toggle focus between navigator and editor
+        if event.key() == Qt.Key.Key_B and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            if self.navigator.hasFocus():
+                # Focus current editor if available
+                current_widget = self.editor_tabs.currentWidget()
+                if current_widget:
+                    current_widget.setFocus()
+            else:
+                # Focus navigator
+                self.navigator.setFocus()
+            event.accept()
+            return
+        
+        # Ctrl+E: Focus current editor
+        if event.key() == Qt.Key.Key_E and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            current_widget = self.editor_tabs.currentWidget()
+            if current_widget:
+                current_widget.setFocus()
+            event.accept()
+            return
+        
+        # Alt+Left/Right: Navigate between open editor tabs
+        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
+            if event.key() == Qt.Key.Key_Left:
+                current = self.editor_tabs.currentIndex()
+                if current > 0:
+                    self.editor_tabs.setCurrentIndex(current - 1)
+                event.accept()
+                return
+            elif event.key() == Qt.Key.Key_Right:
+                current = self.editor_tabs.currentIndex()
+                if current < self.editor_tabs.count() - 1:
+                    self.editor_tabs.setCurrentIndex(current + 1)
+                event.accept()
+                return
+        
+        # Pass unhandled events to parent
+        super().keyPressEvent(event)
+    
+    def closeEvent(self, event) -> None:
+        """Handle window close event"""
+        # Stop MCP server
+        if self.mcp_server:
+            try:
+                self.mcp_server.stop()
+                logger.info("MCP server stopped")
+            except Exception as e:
+                logger.error(f"Error stopping MCP server: {e}")
+        
+        # Accept the close event
+        event.accept()

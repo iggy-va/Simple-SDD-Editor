@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from .document import RequirementType, SpeckitDocument
+from .template import Template
 
 
 @dataclass
@@ -240,6 +241,119 @@ class DocumentValidator:
             result.add_warning(
                 message="No task identifiers (T### or TSK-###) found",
                 suggestion="Add task IDs to track implementation progress"
+            )
+    
+    def validate_ai_content(self, content: str, template: Optional[Template] = None,
+                           document_type: str = "spec") -> ValidationResult:
+        """
+        Validate AI-generated content against templates
+        
+        Args:
+            content: The AI-generated content to validate
+            template: Optional template to validate against
+            document_type: Type of document (spec, plan, tasks)
+        
+        Returns:
+            ValidationResult with errors and warnings
+        """
+        result = ValidationResult(is_valid=True, errors=[], warnings=[])
+        
+        # Check for empty content
+        if not content or not content.strip():
+            result.add_error(
+                message="AI-generated content is empty",
+                suggestion="Request more specific content from AI"
+            )
+            return result
+        
+        # If template provided, validate against required sections
+        if template:
+            # Extract sections from AI content
+            ai_sections = set()
+            for line in content.split("\n"):
+                if line.startswith("#"):
+                    # Extract section title from markdown header
+                    section_title = line.lstrip("#").strip()
+                    ai_sections.add(section_title)
+            
+            # Check template variables are filled
+            template_vars = template.extract_variables()
+            for var in template_vars:
+                # Check if variable placeholder still exists in content
+                var_pattern = re.compile(rf"\${{\s*{re.escape(var.name)}\s*}}")
+                if var_pattern.search(content):
+                    result.add_warning(
+                        message=f"Template variable '{var.name}' not filled",
+                        suggestion=f"Fill in the {var.name} placeholder with appropriate content"
+                    )
+        
+        # Validate based on document type
+        if document_type == "spec":
+            self._validate_ai_spec_content(content, result)
+        elif document_type == "plan":
+            self._validate_ai_plan_content(content, result)
+        elif document_type == "tasks":
+            self._validate_ai_tasks_content(content, result)
+        
+        return result
+    
+    def _validate_ai_spec_content(self, content: str, result: ValidationResult) -> None:
+        """Validate AI-generated spec content"""
+        required_sections = {"User Stories", "Functional Requirements", "Success Criteria"}
+        found_sections = set()
+        
+        for line in content.split("\n"):
+            if line.startswith("#"):
+                section = line.lstrip("#").strip()
+                found_sections.add(section)
+        
+        missing = required_sections - found_sections
+        if missing:
+            result.add_warning(
+                message=f"AI content missing key spec sections: {', '.join(missing)}",
+                suggestion="Request AI to include all required spec sections"
+            )
+        
+        # Check for requirement patterns
+        req_pattern = re.compile(r"\b(FR|SC)-\d{3}\b")
+        if not req_pattern.search(content):
+            result.add_warning(
+                message="No requirement IDs found in AI-generated spec",
+                suggestion="Ask AI to include properly formatted requirement IDs (FR-NNN, SC-NNN)"
+            )
+    
+    def _validate_ai_plan_content(self, content: str, result: ValidationResult) -> None:
+        """Validate AI-generated plan content"""
+        required_sections = {"Technology Stack", "Project Structure"}
+        found_sections = set()
+        
+        for line in content.split("\n"):
+            if line.startswith("#"):
+                section = line.lstrip("#").strip()
+                found_sections.add(section)
+        
+        missing = required_sections - found_sections
+        if missing:
+            result.add_warning(
+                message=f"AI plan missing key sections: {', '.join(missing)}",
+                suggestion="Request AI to include technology stack and project structure"
+            )
+    
+    def _validate_ai_tasks_content(self, content: str, result: ValidationResult) -> None:
+        """Validate AI-generated tasks content"""
+        task_pattern = re.compile(r"\b(T|TSK)-?\d{3}\b")
+        
+        if not task_pattern.search(content):
+            result.add_warning(
+                message="No task identifiers found in AI-generated tasks",
+                suggestion="Ask AI to include task IDs (T001, T002, etc.)"
+            )
+        
+        # Check for checkboxes (tasks should be actionable)
+        if "- [ ]" not in content and "- [x]" not in content:
+            result.add_warning(
+                message="No task checkboxes found",
+                suggestion="Tasks should use markdown checkboxes (- [ ])"
             )
 
 
