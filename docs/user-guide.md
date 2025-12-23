@@ -1,20 +1,65 @@
-# User Guide - Speckit Document Editor/IDE
+# Speckit Document Editor/IDE - User Guide
 
-**Version**: 1.0.0 | **Last Updated**: 2025-12-23
+**Version**: 0.8.5-alpha | **Last Updated**: December 23, 2025
 
-Welcome to the Speckit Editor - your complete IDE for creating, editing, and managing speckit documentation with AI assistance, git integration, and MCP service connectivity.
+---
+
+## Introduction
+
+The Speckit Editor is a specialized IDE for creating and managing software specifications using the Speckit methodology. It combines the simplicity of markdown editing with powerful features for specification management, including:
+
+- **Template-based document creation** for specs, plans, tasks, and checklists
+- **Syntax highlighting** for requirements IDs, priorities, and BDD keywords  
+- **Real-time validation** to ensure document structure compliance
+- **Git integration** with visual diff viewing and merge conflict resolution
+- **MCP service integrations** for Jira, GitHub, databases, and terminals
+- **AI assistance** for content generation with automatic validation
+- **Custom templates** with team sharing capabilities
+
+This guide will help you get started and master all features of the editor.
 
 ---
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
+   - [Installation](#installation)
+   - [First Launch](#first-launch)
+   - [Opening a Project](#opening-a-project)
 2. [Creating and Editing Documents](#creating-and-editing-documents)
-3. [Git Integration](#git-integration)
-4. [MCP Service Integrations](#mcp-service-integrations)
-5. [AI Assistant](#ai-assistant)
-6. [Custom Templates](#custom-templates)
-7. [Troubleshooting](#troubleshooting)
+   - [Creating a New Document](#creating-a-new-document)
+   - [Syntax Highlighting](#syntax-highlighting)
+   - [Real-Time Validation](#real-time-validation)
+   - [Auto-Save](#auto-save)
+3. [Project Navigation](#project-navigation)
+   - [File Navigator](#file-navigator)
+   - [Multi-Document Tabs](#multi-document-tabs)
+   - [Project-Wide Search](#project-wide-search)
+4. [Git Integration](#git-integration)
+   - [Committing Changes](#committing-changes)
+   - [Branching](#branching)
+   - [Push and Pull](#push-and-pull)
+   - [Viewing Diffs](#viewing-diffs)
+   - [Merge Conflicts](#merge-conflicts)
+5. [MCP Service Integrations](#mcp-service-integrations)
+   - [Adding Connections](#adding-connections)
+   - [Testing Connections](#testing-connections)
+   - [Executing Queries](#executing-queries)
+   - [Viewing Results](#viewing-results)
+   - [Inserting References](#inserting-references)
+6. [AI Assistant](#ai-assistant)
+   - [Quick Suggestions](#quick-suggestions)
+   - [Full Assistant Panel](#full-assistant-panel)
+   - [Validation](#validation)
+   - [Session History](#session-history)
+7. [Custom Templates](#custom-templates)
+   - [Creating Templates](#creating-templates)
+   - [Using Variables](#using-variables)
+   - [Template Versioning](#template-versioning)
+   - [Sharing Templates](#sharing-templates)
+8. [Keyboard Shortcuts](#keyboard-shortcuts)
+9. [Troubleshooting](#troubleshooting)
+10. [FAQ](#faq)
 
 ---
 
@@ -22,17 +67,34 @@ Welcome to the Speckit Editor - your complete IDE for creating, editing, and man
 
 ### Installation
 
-1. Download the Speckit Editor executable for your platform:
-   - **Windows**: `Speckit Editor.exe`
-   - **macOS**: `Speckit Editor.app`
-   - **Linux**: `speckit-editor`
+**Standalone Executable** (Recommended)
 
-2. Run the application:
-   - **Windows**: Double-click `Speckit Editor.exe`
-   - **macOS**: Open `Speckit Editor.app`
-   - **Linux**: `./speckit-editor` from terminal
+Download the Speckit Editor for your platform:
+- **Windows**: `SpeckitEditor.exe` (coming soon)
+- **macOS**: `Speckit Editor.app` (coming soon)
+- **Linux**: `speckit-editor` AppImage (coming soon)
 
 No installation or external dependencies required - everything is bundled.
+
+**From Source** (Developers)
+
+```bash
+# Clone repository
+git clone https://github.com/iggy-va/Simple-SDD-Editor.git
+cd Simple-SDD-Editor
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run editor
+python main.py
+```
+
+**Requirements**: Python 3.11+ (for source installation)
 
 ### First Launch
 
@@ -1090,31 +1152,111 @@ Right-click template in Template Manager → **View History**:
 
 ## FAQ
 
-**Q: Can I use the editor offline?**
-A: Yes. Core editing, syntax highlighting, validation, and git operations work offline. MCP services and AI assistance require internet connectivity.
+### General Questions
 
-**Q: What file formats are supported?**
-A: The editor works with Markdown (`.md`) files following the speckit convention. Plain text files (`.txt`) can be opened but won't have syntax highlighting.
+**Q: Can I use the editor offline?**  
+A: Yes. Core editing, syntax highlighting, validation, and git operations work completely offline. MCP service integrations and AI assistance require internet connectivity.
 
-**Q: Can I customize the syntax highlighting colors?**
-A: Not yet. Custom color schemes are planned for a future release.
+**Q: What file formats are supported?**  
+A: The editor works with Markdown (`.md`) files following speckit conventions. Plain text files (`.txt`) can be opened but won't have syntax highlighting or validation.
 
-**Q: How do I report bugs or request features?**
-A: Open an issue on the [GitHub repository](https://github.com/speckit/editor/issues) with details about the bug or feature request.
+**Q: Does the editor work on all operating systems?**  
+A: Yes. The editor runs on Windows 10+, macOS 11+, and Linux (Ubuntu 20.04+). All features have cross-platform parity.
 
-**Q: Is my data private?**
-A: Yes. All documents are stored locally. MCP service credentials are encrypted in your OS keyring. AI assistance sends only the selected text, never entire documents.
+**Q: How much does it cost?**  
+A: Speckit Editor is open source and free under the MIT License. No subscriptions or hidden fees.
+
+### Editing & Features
+
+**Q: Can I customize the syntax highlighting colors?**  
+A: Custom color schemes are planned for a future release. Current highlighting uses a professional color palette optimized for readability.
+
+**Q: How do I create my own templates?**  
+A: Use **Templates → Template Manager → Create New Template**. Design your template with variables like `${feature_name}` and save. See [Custom Templates](#custom-templates) for details.
+
+**Q: Can I use the editor for non-speckit documents?**  
+A: Yes! While optimized for speckit, the editor works great for any markdown documentation, technical writing, or note-taking.
+
+**Q: What's the maximum file size supported?**  
+A: Files up to 5MB load instantly. Larger files (up to 50MB) use lazy loading for performance. For best experience, split very large documents.
+
+### Git Integration
+
+**Q: Do I need to install git separately?**  
+A: No. The editor includes built-in git functionality. However, for advanced operations, having git installed provides additional capabilities.
+
+**Q: Can I use the editor with existing git repositories?**  
+A: Absolutely. Just open the project folder (File → Open Project) and all git features will work immediately.
+
+**Q: What if I make a mistake in a commit?**  
+A: Use **Git → Amend Last Commit** or create a new commit with corrections. All standard git operations are available.
+
+### MCP & AI
+
+**Q: What MCP services are supported?**  
+A: Currently supports Jira, GitHub, PostgreSQL/MySQL databases, Git CLI, Chrome automation, and terminal commands. More services can be added via plugins.
+
+**Q: Is my API key safe?**  
+A: Yes. All credentials are encrypted and stored in your operating system's secure keyring (Windows Credential Manager, macOS Keychain, Linux Secret Service). They never appear in config files.
+
+**Q: Which AI providers are supported?**  
+A: The editor works with any OpenAI-compatible API. Configuration is in **Edit → Preferences → AI Assistant**.
+
+**Q: Can I disable AI features?**  
+A: Yes. Go to **Edit → Preferences → AI Assistant** and uncheck "Enable AI assistance". This removes all AI UI elements.
+
+### Data & Privacy
+
+**Q: Where are my documents stored?**  
+A: Documents are stored exactly where you save them. The editor doesn't copy or move your files. Settings and cache live in `.specify/` in your home directory.
+
+**Q: Is my data sent to external servers?**  
+A: Only if you use MCP services or AI assistance. Core editing, validation, and git operations are 100% local. AI sends only selected text, never full documents.
+
+**Q: What data does crash recovery store?**  
+A: Unsaved document content is cached in `.specify/cache/recovery/` and automatically deleted after successful save. It's stored locally, never transmitted.
+
+### Troubleshooting
+
+**Q: The application won't start. What should I do?**  
+A: 
+1. Check system requirements (Windows 10+, macOS 11+, or Ubuntu 20.04+)
+2. Try running from terminal to see error messages
+3. Delete `.specify/` folder to reset settings
+4. Reinstall the application
+
+**Q: I lost my work! Can I recover it?**  
+A: Check **File → Recover Unsaved Documents**. The editor auto-saves every 30 seconds and maintains crash recovery caches. See [Auto-Save](#auto-save) for details.
+
+**Q: How do I report bugs or request features?**  
+A: Open an issue on the [GitHub repository](https://github.com/iggy-va/Simple-SDD-Editor/issues) with:
+- Steps to reproduce the bug
+- Expected vs actual behavior
+- Screenshots (if applicable)
+- Your OS and editor version
+
+**Q: Can I contribute to the project?**  
+A: Yes! We welcome contributions. See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on submitting pull requests.
 
 ---
 
 ## Additional Resources
 
-- [Developer Guide](developer-guide.md) - For contributors and developers
-- [GitHub Repository](https://github.com/speckit/editor) - Source code and issues
-- [Speckit Documentation](https://speckit.dev/docs) - Methodology and conventions
+- **[Developer Guide](developer-guide.md)** - Architecture, contributing, and development setup
+- **[GitHub Repository](https://github.com/iggy-va/Simple-SDD-Editor)** - Source code, issues, and releases
+- **[README](../README.md)** - Quick start and feature overview
+- **[LICENSE](../LICENSE)** - MIT License terms
+- **[Test Report](../TEST_REPORT.md)** - Quality assurance documentation
 
 ---
 
-**Need Help?** Open an issue on GitHub or email support@speckit.dev
+## Getting Help
 
-**Version**: 1.0.0 | **Last Updated**: 2025-12-23
+- **Bug Reports**: [GitHub Issues](https://github.com/iggy-va/Simple-SDD-Editor/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/iggy-va/Simple-SDD-Editor/discussions)
+- **Questions**: Open a discussion on GitHub
+
+---
+
+**Version**: 0.8.5-alpha | **Last Updated**: December 23, 2025  
+**License**: MIT | **Maintainer**: Iggy ([@iggy-va](https://github.com/iggy-va))

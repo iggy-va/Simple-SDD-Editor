@@ -355,13 +355,9 @@
 - [ ] T183 [Complex] Test packaged executables on all three platforms
 - [ ] T184 [P] [Complex] Optimize bundle size with UPX compression and module exclusions
 - [ ] T185 [P] [Complex] Implement code signing for Windows and macOS executables
-- [ ] T186 [P] [Simple] Polish and finalize docs/user-guide.md (consolidate incremental sections, add intro/FAQ/troubleshooting)
-- [ ] T187 [P] [Simple] Polish and finalize docs/developer-guide.md (add packaging details, contribution workflow)
-- [ ] T188 [P] [Simple] Add screenshots to docs/screenshots/ for README and user guide
-  - **Decision needed**: Screenshot capture approach:
-    - A) Manual screenshots (Win + Shift + S) - user captures, AI saves to docs/screenshots/
-    - B) Automated Python script using pyautogui/PIL + Qt QPixmap.grabWindow()
-    - C) Built-in screenshot feature added to application (Ctrl+Shift+S hotkey)
+- [x] T186 [P] [Simple] Polish and finalize docs/user-guide.md (consolidate incremental sections, add intro/FAQ/troubleshooting)
+- [x] T187 [P] [Simple] Polish and finalize docs/developer-guide.md (add packaging details, contribution workflow)
+- [x] T188 [P] [Simple] Add screenshots to docs/screenshots/ for README and user guide
 - [x] T189 [Simple] Update README.md with complete project documentation structure
   - Project description and features overview
   - Installation instructions (all platforms)
