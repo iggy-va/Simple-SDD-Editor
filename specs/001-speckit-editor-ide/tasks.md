@@ -352,9 +352,9 @@
 - [ ] T180 [P] [Complex] Test all 42 functional requirements on Windows, macOS, and Linux (per SC-011)
 - [x] T181 [Architecture] Create PyInstaller spec file sdd-editor.spec for Windows (.exe), macOS (.app), and Linux (AppImage)
 - [x] T182 [Simple] Configure PyInstaller to bundle Python runtime and all dependencies
-- [ ] T183 [Complex] Test packaged executables on all three platforms
-- [ ] T184 [P] [Complex] Optimize bundle size with UPX compression and module exclusions
-- [ ] T185 [P] [Complex] Implement code signing for Windows and macOS executables
+- [~] T183 [Complex] Test packaged executables on all three platforms (blocked: Python 3.14 + PyInstaller compatibility - see PACKAGING_PLAN.md)
+- [~] T184 [P] [Complex] Optimize bundle size with UPX compression and module exclusions (documented in PACKAGING_PLAN.md - ready to execute)
+- [~] T185 [P] [Complex] Implement code signing for Windows and macOS executables (documented in PACKAGING_PLAN.md - requires certificates)
 - [x] T186 [P] [Simple] Polish and finalize docs/user-guide.md (consolidate incremental sections, add intro/FAQ/troubleshooting)
 - [x] T187 [P] [Simple] Polish and finalize docs/developer-guide.md (add packaging details, contribution workflow)
 - [x] T188 [P] [Simple] Add screenshots to docs/screenshots/ for README and user guide
