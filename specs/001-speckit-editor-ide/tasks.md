@@ -362,7 +362,7 @@
     - A) Manual screenshots (Win + Shift + S) - user captures, AI saves to docs/screenshots/
     - B) Automated Python script using pyautogui/PIL + Qt QPixmap.grabWindow()
     - C) Built-in screenshot feature added to application (Ctrl+Shift+S hotkey)
-- [ ] T189 [Simple] Update README.md with complete project documentation structure
+- [x] T189 [Simple] Update README.md with complete project documentation structure
   - Project description and features overview
   - Installation instructions (all platforms)
   - Quick start guide (30-second getting started)
