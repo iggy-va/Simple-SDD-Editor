@@ -55,7 +55,6 @@ class NewProjectDialog(QDialog):
         
         # Full path display
         self.full_path_label = QLabel()
-        self.full_path_label.setStyleSheet("color: gray; font-style: italic;")
         self._update_full_path()
         form.addRow("Full Path:", self.full_path_label)
         

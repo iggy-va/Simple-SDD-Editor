@@ -34,6 +34,7 @@ from .search_panel import SearchPanel
 from .settings_dialog import SettingsDialog
 from .template_dialog import TemplateDialog
 from .template_manager import TemplateManagerWidget
+from .themes import Theme, ThemeManager
 
 logger = get_logger(__name__)
 
@@ -572,107 +573,18 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(welcome_widget, "Welcome")
     
     def _apply_styling(self) -> None:
-        """Apply application-wide styling"""
-        # Basic stylesheet for focus indicators and theme
-        stylesheet = """
-        QMainWindow {
-            background-color: #ffffff;
-            color: #000000;
-        }
+        """Apply application-wide styling based on current theme"""
+        # Get theme from settings
+        theme_name = self.app_settings.theme
+        if theme_name == "dark":
+            theme = Theme.DARK
+        elif theme_name == "light":
+            theme = Theme.LIGHT
+        else:
+            theme = Theme.LIGHT  # Default to light
         
-        QWidget {
-            color: #000000;
-        }
-        
-        QTabWidget::pane {
-            border: 1px solid #cccccc;
-            background-color: #ffffff;
-        }
-        
-        QTabBar::tab {
-            background-color: #f0f0f0;
-            color: #000000;
-            border: 1px solid #cccccc;
-            border-bottom: none;
-            padding: 6px 12px;
-            margin-right: 2px;
-        }
-        
-        QTabBar::tab:selected {
-            background-color: #ffffff;
-            color: #000000;
-            border-bottom: 1px solid #ffffff;
-        }
-        
-        QTabBar::tab:hover {
-            background-color: #e0e0e0;
-        }
-        
-        QTextEdit, QPlainTextEdit {
-            background-color: #ffffff;
-            color: #000000;
-            border: 1px solid #cccccc;
-        }
-        
-        QTreeView {
-            background-color: #ffffff;
-            color: #000000;
-            border: 1px solid #cccccc;
-        }
-        
-        QLabel {
-            color: #000000;
-        }
-        
-        /* Focus indicators for accessibility */
-        *:focus {
-            outline: 2px solid #0078d4;
-            outline-offset: 2px;
-        }
-        
-        QMenuBar {
-            background-color: #f0f0f0;
-            color: #000000;
-            border-bottom: 1px solid #cccccc;
-        }
-        
-        QMenuBar::item {
-            color: #000000;
-        }
-        
-        QMenuBar::item:selected {
-            background-color: #e0e0e0;
-        }
-        
-        QMenu {
-            background-color: #ffffff;
-            color: #000000;
-            border: 1px solid #cccccc;
-        }
-        
-        QMenu::item:selected {
-            background-color: #0078d4;
-            color: #ffffff;
-        }
-        
-        QStatusBar {
-            background-color: #f0f0f0;
-            color: #000000;
-            border-top: 1px solid #cccccc;
-        }
-        
-        QPushButton {
-            color: #000000;
-        }
-        
-        QLineEdit {
-            background-color: #ffffff;
-            color: #000000;
-            border: 1px solid #cccccc;
-            padding: 4px;
-        }
-        """
-        
+        # Apply theme stylesheet
+        stylesheet = ThemeManager.get_stylesheet(theme)
         self.setStyleSheet(stylesheet)
     
     # Menu action handlers (placeholders)
