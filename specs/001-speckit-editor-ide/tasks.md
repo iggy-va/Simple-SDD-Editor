@@ -125,8 +125,8 @@
 - [ ] T063 [P] [Complex] [US2] Implement drag-and-drop for allowed operations in src/gui/navigator.py (documents between folders, files to tabs, external files import per FR-027)
 - [ ] T064 [Simple] [US2] Add visual drop target highlighting and forbidden cursor in src/gui/navigator.py
 - [ ] T065 [P] [Simple] [US2] Implement context menu for file operations in src/gui/navigator.py (rename, delete with confirmation, duplicate, copy path, reveal in explorer, open external per FR-028)
-- [ ] T066 [Complex] [US2] Handle external file change detection in src/core/project.py using filesystem watchers
-- [ ] T067 [Simple] [US2] Prompt user to reload when external changes detected in src/gui/main_window.py (per FR-023, FR-041)
+- [x] T066 [Complex] [US2] Handle external file change detection in src/core/project.py using filesystem watchers
+- [x] T067 [Simple] [US2] Prompt user to reload when external changes detected in src/gui/main_window.py (per FR-023, FR-041)
 - [ ] T068 [P] [Simple] [US2] Implement zero-state UI for empty projects in src/gui/main_window.py (quick-start actions per FR-034)
 
 **Checkpoint**: User Story 2 complete - Users can navigate projects, manage multiple open documents, and search across files
