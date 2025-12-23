@@ -3,3 +3,6 @@ pygit2>=1.13.0
 keyring>=24.0.0
 markdown>=3.5.0
 httpx>=0.25.0
+
+# Development/Packaging
+pyinstaller==6.15.0

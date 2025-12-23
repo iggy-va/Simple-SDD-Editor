@@ -437,8 +437,9 @@ def test_syntax_highlighting(qtbot):
 ### Prerequisites
 
 **Required**:
-- **Python 3.11 or 3.12** (⚠️ Python 3.14 has PyInstaller compatibility issues)
-- PyInstaller 6.x: `pip install pyinstaller`
+- **Python 3.11 or 3.12** (recommended for stable packaging)
+- **Python 3.14**: May work with PyInstaller 6.15.0 (test before production)
+- PyInstaller 6.15.0: `pip install pyinstaller==6.15.0`
 - Platform-specific tools:
   - Windows: Visual Studio Build Tools (for some dependencies)
   - macOS: Xcode Command Line Tools

@@ -8,8 +8,9 @@
 - Build instructions for all platforms
 
 ⚠️ **Known Issues**:
-- Python 3.14.2 + PyInstaller 6.x + keyring → `ValueError: invalid version in keyring metadata`
-- **Workaround**: Use Python 3.11 or 3.12 for packaging
+- Python 3.14.2 + PyInstaller 6.15.0 + keyring → May have compatibility issues
+- **Recommended**: Use Python 3.11 or 3.12 for stable packaging
+- **Note**: PyInstaller 6.15.0 may resolve some Python 3.14 issues - test before production use
 
 ---
 
@@ -26,7 +27,7 @@
 
 2. **Install PyInstaller**:
    ```powershell
-   pip install pyinstaller==6.11.1
+   pip install pyinstaller==6.15.0
    ```
 
 3. **Verify Dependencies**:
@@ -321,10 +322,11 @@ gpg --verify Speckit-Editor-x86_64.AppImage.asc Speckit-Editor-x86_64.AppImage
 # Build with 3.12, run with any version
 ```
 
-### Option 2: Wait for PyInstaller 7.0
+### Option 2: Test with PyInstaller 6.15.0
 
-- Track: https://github.com/pyinstaller/pyinstaller/issues/8717
-- ETA: Unknown (keyring/distutils compatibility)
+- Latest version may have Python 3.14 fixes
+- Track issues: https://github.com/pyinstaller/pyinstaller/issues/8717
+- Test thoroughly before production packaging
 
 ### Option 3: Patch keyring (Advanced)
 
