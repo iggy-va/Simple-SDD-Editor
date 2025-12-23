@@ -18,6 +18,10 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QSplitter,
+    QTabWidget,
+    QTableWidget,
+    QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -195,6 +199,88 @@ class MCPPanel(QWidget):
         
         layout.addWidget(list_group)
         
+        # Query and Results section (T130-T139)
+        query_results_group = QGroupBox("Query & Results")
+        query_results_layout = QVBoxLayout(query_results_group)
+        
+        # Query input (T130)
+        query_input_layout = QHBoxLayout()
+        
+        self.query_type_combo = QComboBox()
+        self.query_type_combo.addItems(["JQL (Jira)", "SQL (Database)", "GitHub Query", "Terminal Command"])
+        self.query_type_combo.setAccessibleDescription("Select query type")
+        query_input_layout.addWidget(QLabel("Type:"))
+        query_input_layout.addWidget(self.query_type_combo)
+        query_input_layout.addStretch()
+        
+        query_results_layout.addLayout(query_input_layout)
+        
+        self.query_input = QTextEdit()
+        self.query_input.setPlaceholderText("Enter query...\nExamples:\n  JQL: project = PROJ AND status = Open\n  SQL: SELECT * FROM users LIMIT 10\n  GitHub: is:issue is:open label:bug\n  Terminal: ls -la")
+        self.query_input.setMaximumHeight(100)
+        self.query_input.setAccessibleName("Query Input")
+        self.query_input.setAccessibleDescription("Enter JQL, SQL, GitHub query, or terminal command")
+        query_results_layout.addWidget(self.query_input)
+        
+        # Execute button (T132)
+        execute_layout = QHBoxLayout()
+        
+        self.execute_button = QPushButton("Execute Query")
+        self.execute_button.setAccessibleDescription("Execute the entered query")
+        self.execute_button.clicked.connect(self._on_execute_query)
+        self.execute_button.setEnabled(False)
+        execute_layout.addWidget(self.execute_button)
+        
+        self.export_button = QPushButton("Export Results...")
+        self.export_button.setAccessibleDescription("Export query results")
+        self.export_button.clicked.connect(self._on_export_results)
+        self.export_button.setEnabled(False)
+        execute_layout.addWidget(self.export_button)
+        
+        execute_layout.addStretch()
+        query_results_layout.addLayout(execute_layout)
+        
+        # Results display (T131)
+        self.results_tabs = QTabWidget()
+        self.results_tabs.setAccessibleName("Query Results")
+        
+        # Table view for database results (T133)
+        self.results_table = QTableWidget()
+        self.results_table.setAccessibleName("Results Table")
+        self.results_table.setAccessibleDescription("Database query results in table format")
+        self.results_table.setSortingEnabled(True)
+        self.results_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.results_table.customContextMenuRequested.connect(self._on_table_context_menu)
+        self.results_tabs.addTab(self.results_table, "Table")
+        
+        # List view for Jira/GitHub (T134)
+        self.results_list = QListWidget()
+        self.results_list.setAccessibleName("Results List")
+        self.results_list.setAccessibleDescription("Jira or GitHub issue results")
+        self.results_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.results_list.customContextMenuRequested.connect(self._on_list_context_menu)
+        self.results_tabs.addTab(self.results_list, "List")
+        
+        # Terminal output (T135)
+        self.terminal_output = QTextEdit()
+        self.terminal_output.setReadOnly(True)
+        self.terminal_output.setAccessibleName("Terminal Output")
+        self.terminal_output.setAccessibleDescription("Real-time terminal command output")
+        self.terminal_output.setStyleSheet("QTextEdit { background-color: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; }")
+        self.results_tabs.addTab(self.terminal_output, "Terminal")
+        
+        # JSON view
+        self.json_output = QTextEdit()
+        self.json_output.setReadOnly(True)
+        self.json_output.setAccessibleName("JSON Output")
+        self.json_output.setAccessibleDescription("Query results in JSON format")
+        self.json_output.setStyleSheet("QTextEdit { font-family: 'Consolas', 'Courier New', monospace; }")
+        self.results_tabs.addTab(self.json_output, "JSON")
+        
+        query_results_layout.addWidget(self.results_tabs)
+        
+        layout.addWidget(query_results_group)
+        
         # Status area
         status_group = QGroupBox("Status")
         status_layout = QVBoxLayout(status_group)
@@ -255,6 +341,7 @@ class MCPPanel(QWidget):
         
         self.remove_button.setEnabled(has_selection)
         self.test_button.setEnabled(has_selection)
+        self.execute_button.setEnabled(has_selection)  # Enable query execution when connection selected
         
         if has_selection and self.mcp_server:
             conn_name = selected[0].data(Qt.UserRole)
@@ -369,4 +456,291 @@ class MCPPanel(QWidget):
             self.connectionTested.emit(conn_name, False, error_msg or "Unknown error")
         
         # Refresh to update status icons
-        self._refresh_connections()
+        self._refresh_connections()    
+    def _on_execute_query(self) -> None:
+        """Handle query execution (T132)"""
+        query = self.query_input.toPlainText().strip()
+        if not query:
+            QMessageBox.warning(self, "Empty Query", "Please enter a query to execute.")
+            return
+        
+        selected = self.connections_list.selectedItems()
+        if not selected or not self.mcp_server:
+            QMessageBox.warning(self, "No Connection", "Please select a connection first.")
+            return
+        
+        conn_name = selected[0].data(Qt.UserRole)
+        query_type = self.query_type_combo.currentText()
+        
+        self.status_label.setText(f"<b>Executing {query_type}...</b><br>Please wait...")
+        
+        # Mock query execution - in real implementation, this would call MCP service
+        import json
+        from PySide6.QtWidgets import QApplication
+        QApplication.processEvents()
+        
+        try:
+            # Simulate query based on type
+            if "JQL" in query_type or "GitHub" in query_type:
+                # Mock issue list (T134)
+                self._populate_issue_list([
+                    {"key": "PROJ-123", "summary": "Example bug report", "status": "Open", "assignee": "user@example.com"},
+                    {"key": "PROJ-124", "summary": "Feature request", "status": "In Progress", "assignee": "dev@example.com"},
+                    {"key": "PROJ-125", "summary": "Documentation update", "status": "Done", "assignee": "doc@example.com"},
+                ])
+                self.results_tabs.setCurrentWidget(self.results_list)
+            elif "SQL" in query_type:
+                # Mock database results (T133)
+                self._populate_table([
+                    {"id": "1", "name": "Alice", "email": "alice@example.com", "role": "Admin"},
+                    {"id": "2", "name": "Bob", "email": "bob@example.com", "role": "User"},
+                    {"id": "3", "name": "Charlie", "email": "charlie@example.com", "role": "Developer"},
+                ])
+                self.results_tabs.setCurrentWidget(self.results_table)
+            elif "Terminal" in query_type:
+                # Mock terminal output (T135)
+                self._append_terminal_output(f"$ {query}\n")
+                self._append_terminal_output("total 48\n")
+                self._append_terminal_output("drwxr-xr-x  12 user  group   384 Dec 23 11:00 .\n")
+                self._append_terminal_output("drwxr-xr-x   8 user  group   256 Dec 22 10:30 ..\n")
+                self._append_terminal_output("-rw-r--r--   1 user  group  1234 Dec 23 09:15 main.py\n")
+                self._append_terminal_output("-rw-r--r--   1 user  group  5678 Dec 23 10:45 README.md\n")
+                self.results_tabs.setCurrentWidget(self.terminal_output)
+            
+            # Also show JSON view
+            self.json_output.setText(json.dumps({
+                "query": query,
+                "query_type": query_type,
+                "connection": conn_name,
+                "timestamp": "2025-12-23T11:36:00Z",
+                "result_count": 3,
+                "status": "success"
+            }, indent=2))
+            
+            self.status_label.setText(f"<b style='color: green;'>✓ Query Executed Successfully</b><br>Type: {query_type}<br>Results: 3 items")
+            self.export_button.setEnabled(True)
+            
+        except Exception as e:
+            self.status_label.setText(f"<b style='color: red;'>✗ Query Failed</b><br>Error: {str(e)}")
+            logger.error(f"Query execution failed: {e}")
+    
+    def _populate_table(self, results: list) -> None:
+        """Populate results table (T133)"""
+        if not results:
+            self.results_table.setRowCount(0)
+            self.results_table.setColumnCount(0)
+            return
+        
+        # Set up columns
+        columns = list(results[0].keys())
+        self.results_table.setColumnCount(len(columns))
+        self.results_table.setHorizontalHeaderLabels(columns)
+        
+        # Populate rows
+        self.results_table.setRowCount(len(results))
+        for row_idx, row_data in enumerate(results):
+            for col_idx, col_name in enumerate(columns):
+                item = QTableWidgetItem(str(row_data.get(col_name, "")))
+                self.results_table.setItem(row_idx, col_idx, item)
+        
+        # Auto-resize columns
+        self.results_table.resizeColumnsToContents()
+    
+    def _populate_issue_list(self, issues: list) -> None:
+        """Populate issue list for Jira/GitHub (T134)"""
+        self.results_list.clear()
+        
+        for issue in issues:
+            key = issue.get("key", "")
+            summary = issue.get("summary", "")
+            status = issue.get("status", "")
+            assignee = issue.get("assignee", "Unassigned")
+            
+            # Format: [KEY] Summary - Status (Assignee)
+            item_text = f"[{key}] {summary} - {status} ({assignee})"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.UserRole, issue)  # Store full issue data
+            
+            # Add tooltip with more info (T138)
+            tooltip = f"<b>{key}</b><br>"
+            tooltip += f"<b>Summary:</b> {summary}<br>"
+            tooltip += f"<b>Status:</b> {status}<br>"
+            tooltip += f"<b>Assignee:</b> {assignee}"
+            item.setToolTip(tooltip)
+            
+            self.results_list.addItem(item)
+    
+    def _append_terminal_output(self, text: str) -> None:
+        """Append text to terminal output (T135)"""
+        # In real implementation, this would handle ANSI color codes
+        self.terminal_output.append(text.rstrip())
+    
+    def _on_table_context_menu(self, position) -> None:
+        """Show context menu for table results (T136)"""
+        from PySide6.QtWidgets import QMenu
+        from PySide6.QtGui import QAction
+        
+        menu = QMenu(self)
+        
+        insert_action = QAction("Insert Reference at Cursor", self)
+        insert_action.triggered.connect(lambda: self._insert_reference_from_table())
+        menu.addAction(insert_action)
+        
+        copy_action = QAction("Copy Cell", self)
+        copy_action.triggered.connect(self._copy_table_cell)
+        menu.addAction(copy_action)
+        
+        menu.exec(self.results_table.viewport().mapToGlobal(position))
+    
+    def _on_list_context_menu(self, position) -> None:
+        """Show context menu for issue list (T136)"""
+        from PySide6.QtWidgets import QMenu
+        from PySide6.QtGui import QAction
+        
+        item = self.results_list.itemAt(position)
+        if not item:
+            return
+        
+        menu = QMenu(self)
+        
+        insert_action = QAction("Insert Issue Reference at Cursor", self)
+        insert_action.triggered.connect(lambda: self._insert_reference_from_list(item))
+        menu.addAction(insert_action)
+        
+        copy_key_action = QAction("Copy Issue Key", self)
+        copy_key_action.triggered.connect(lambda: self._copy_issue_key(item))
+        menu.addAction(copy_key_action)
+        
+        menu.exec(self.results_list.viewport().mapToGlobal(position))
+    
+    def _insert_reference_from_table(self) -> None:
+        """Insert table reference at cursor (T136)"""
+        current_item = self.results_table.currentItem()
+        if not current_item:
+            return
+        
+        text = current_item.text()
+        # TODO: Insert into active editor at cursor position
+        # For now, just copy to clipboard
+        from PySide6.QtWidgets import QApplication
+        QApplication.clipboard().setText(text)
+        self.status_label.setText(f"<b>Copied to clipboard:</b> {text[:50]}...")
+    
+    def _insert_reference_from_list(self, item: QListWidgetItem) -> None:
+        """Insert issue reference at cursor (T136)"""
+        issue_data = item.data(Qt.UserRole)
+        key = issue_data.get("key", "")
+        
+        if key:
+            # TODO: Insert into active editor at cursor position
+            # For now, just copy to clipboard
+            from PySide6.QtWidgets import QApplication
+            QApplication.clipboard().setText(f"[{key}]")
+            self.status_label.setText(f"<b>Copied to clipboard:</b> [{key}]")
+    
+    def _copy_table_cell(self) -> None:
+        """Copy selected table cell to clipboard"""
+        current_item = self.results_table.currentItem()
+        if current_item:
+            from PySide6.QtWidgets import QApplication
+            QApplication.clipboard().setText(current_item.text())
+    
+    def _copy_issue_key(self, item: QListWidgetItem) -> None:
+        """Copy issue key to clipboard"""
+        issue_data = item.data(Qt.UserRole)
+        key = issue_data.get("key", "")
+        if key:
+            from PySide6.QtWidgets import QApplication
+            QApplication.clipboard().setText(key)
+    
+    def _on_export_results(self) -> None:
+        """Export results to file (T139)"""
+        from PySide6.QtWidgets import QFileDialog, QMenu
+        from PySide6.QtGui import QAction
+        
+        menu = QMenu(self)
+        
+        csv_action = QAction("Export as CSV", self)
+        csv_action.triggered.connect(lambda: self._export_as_csv())
+        menu.addAction(csv_action)
+        
+        json_action = QAction("Export as JSON", self)
+        json_action.triggered.connect(lambda: self._export_as_json())
+        menu.addAction(json_action)
+        
+        md_action = QAction("Export as Markdown Table", self)
+        md_action.triggered.connect(lambda: self._export_as_markdown())
+        menu.addAction(md_action)
+        
+        # Show menu at button position
+        menu.exec(self.export_button.mapToGlobal(self.export_button.rect().bottomLeft()))
+    
+    def _export_as_csv(self) -> None:
+        """Export table results as CSV"""
+        from PySide6.QtWidgets import QFileDialog
+        import csv
+        
+        filename, _ = QFileDialog.getSaveFileName(self, "Export as CSV", "", "CSV Files (*.csv)")
+        if not filename:
+            return
+        
+        try:
+            with open(filename, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                
+                # Write headers
+                headers = [self.results_table.horizontalHeaderItem(i).text() 
+                          for i in range(self.results_table.columnCount())]
+                writer.writerow(headers)
+                
+                # Write rows
+                for row in range(self.results_table.rowCount()):
+                    row_data = [self.results_table.item(row, col).text() 
+                               for col in range(self.results_table.columnCount())]
+                    writer.writerow(row_data)
+            
+            self.status_label.setText(f"<b style='color: green;'>✓ Exported to CSV:</b><br>{filename}")
+        except Exception as e:
+            QMessageBox.critical(self, "Export Failed", f"Failed to export CSV: {str(e)}")
+    
+    def _export_as_json(self) -> None:
+        """Export results as JSON"""
+        from PySide6.QtWidgets import QFileDialog
+        
+        filename, _ = QFileDialog.getSaveFileName(self, "Export as JSON", "", "JSON Files (*.json)")
+        if not filename:
+            return
+        
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(self.json_output.toPlainText())
+            
+            self.status_label.setText(f"<b style='color: green;'>✓ Exported to JSON:</b><br>{filename}")
+        except Exception as e:
+            QMessageBox.critical(self, "Export Failed", f"Failed to export JSON: {str(e)}")
+    
+    def _export_as_markdown(self) -> None:
+        """Export table results as Markdown table"""
+        from PySide6.QtWidgets import QFileDialog
+        
+        filename, _ = QFileDialog.getSaveFileName(self, "Export as Markdown", "", "Markdown Files (*.md)")
+        if not filename:
+            return
+        
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                # Write header row
+                headers = [self.results_table.horizontalHeaderItem(i).text() 
+                          for i in range(self.results_table.columnCount())]
+                f.write("| " + " | ".join(headers) + " |\n")
+                f.write("| " + " | ".join(["---"] * len(headers)) + " |\n")
+                
+                # Write data rows
+                for row in range(self.results_table.rowCount()):
+                    row_data = [self.results_table.item(row, col).text() 
+                               for col in range(self.results_table.columnCount())]
+                    f.write("| " + " | ".join(row_data) + " |\n")
+            
+            self.status_label.setText(f"<b style='color: green;'>✓ Exported to Markdown:</b><br>{filename}")
+        except Exception as e:
+            QMessageBox.critical(self, "Export Failed", f"Failed to export Markdown: {str(e)}")

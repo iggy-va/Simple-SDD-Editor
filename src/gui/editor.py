@@ -115,6 +115,13 @@ class MarkdownHighlighter(QSyntaxHighlighter):
         list_format.setForeground(QColor("#6B7280"))
         formats["list"] = list_format
         
+        # Issue references ([PROJ-123], [GH-456], etc.) - T137
+        issue_format = QTextCharFormat()
+        issue_format.setForeground(QColor("#0891B2"))  # Cyan-600
+        issue_format.setFontWeight(QFont.Bold)
+        issue_format.setFontUnderline(True)
+        formats["issue"] = issue_format
+        
         return formats
     
     def _create_rules(self) -> list:
@@ -134,6 +141,10 @@ class MarkdownHighlighter(QSyntaxHighlighter):
         
         # Priority markers (P1, P2, P3, P4)
         rules.append((re.compile(r"\b(P[1-4])\b"), "priority"))
+        
+        # Issue references - T137
+        # Matches patterns like [PROJ-123], [GH-456], [JIRA-789], etc.
+        rules.append((re.compile(r"\[([A-Z][A-Z0-9]+-\d+)\]"), "issue"))
         
         # BDD keywords
         rules.append((re.compile(r"\b(Given|When|Then|And|But)\b"), "bdd"))

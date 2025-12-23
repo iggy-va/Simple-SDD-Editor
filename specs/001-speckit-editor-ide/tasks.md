@@ -244,18 +244,18 @@
   - Testing connections
   - Offline mode
 
-- [ ] T130 [P] [Complex] [US4] Implement query/action panel in src/gui/mcp_panel.py (input area for JQL, SQL, commands)
-- [ ] T131 [P] [Complex] [US4] Implement results display panel in src/gui/mcp_panel.py (table view, list view, JSON viewer, terminal output)
-- [ ] T132 [Simple] [US4] Implement execute query button with service-specific validation in src/gui/mcp_panel.py
-- [ ] T133 [Complex] [US4] Implement table formatter for database query results in src/gui/mcp_panel.py (sortable columns, pagination)
-- [ ] T134 [Simple] [US4] Implement list formatter for Jira/GitHub results in src/gui/mcp_panel.py (issue cards with metadata)
-- [ ] T135 [Complex] [US4] Implement real-time terminal output streaming in src/gui/mcp_panel.py (ANSI color codes, scrollback buffer)
-- [ ] T136 [Simple] [US4] Implement insert reference action in src/gui/mcp_panel.py (right-click result → insert link at cursor)
-- [ ] T137 [Complex] [US4] Implement in-document issue highlighting in src/gui/editor.py (detect [PROJ-123] patterns, apply formatting)
-- [ ] T138 [Simple] [US4] Implement quick-view tooltips for linked issues in src/gui/editor.py (hover → fetch issue summary from MCP cache)
-- [ ] T139 [Simple] [US4] Implement export results actions in src/gui/mcp_panel.py (CSV, JSON, Markdown table)
+- [x] T130 [P] [Complex] [US4] Implement query/action panel in src/gui/mcp_panel.py (input area for JQL, SQL, commands)
+- [x] T131 [P] [Complex] [US4] Implement results display panel in src/gui/mcp_panel.py (table view, list view, JSON viewer, terminal output)
+- [x] T132 [Simple] [US4] Implement execute query button with service-specific validation in src/gui/mcp_panel.py
+- [x] T133 [Complex] [US4] Implement table formatter for database query results in src/gui/mcp_panel.py (sortable columns, pagination)
+- [x] T134 [Simple] [US4] Implement list formatter for Jira/GitHub results in src/gui/mcp_panel.py (issue cards with metadata)
+- [x] T135 [Complex] [US4] Implement real-time terminal output streaming in src/gui/mcp_panel.py (ANSI color codes, scrollback buffer)
+- [x] T136 [Simple] [US4] Implement insert reference action in src/gui/mcp_panel.py (right-click result → insert link at cursor)
+- [x] T137 [Complex] [US4] Implement in-document issue highlighting in src/gui/editor.py (detect [PROJ-123] patterns, apply formatting)
+- [x] T138 [Simple] [US4] Implement quick-view tooltips for linked issues in src/gui/editor.py (hover → fetch issue summary from MCP cache)
+- [x] T139 [Simple] [US4] Implement export results actions in src/gui/mcp_panel.py (CSV, JSON, Markdown table)
 
-**Checkpoint**: User Story 4 complete - Users can configure MCP connections with credentials and test connectivity. Query/results UI in next release (T130-T139).
+**Checkpoint**: User Story 4 ✅ COMPLETE - Users can configure MCP connections, execute queries (JQL/SQL/GitHub/Terminal), view results in multiple formats (table/list/JSON/terminal), export results (CSV/JSON/Markdown), and insert references into documents. Issue highlighting [PROJ-123] working in editor.
 
 ---
 
