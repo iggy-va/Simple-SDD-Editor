@@ -95,7 +95,19 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T016 [US1] Add validation and error handling
 - [ ] T017 [US1] Add logging for user story 1 operations
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+### Documentation for User Story 1
+
+- [ ] T018 [P] [Simple] [US1] Document US1 features in docs/user-guide.md
+  - [Feature overview]
+  - [How to use X]
+  - [Understanding Y]
+  - [Troubleshooting Z]
+- [ ] T019 [P] [Simple] [US1] Update README.md for US1 completion
+  - Update feature status (US1: ✅ Complete)
+  - Update test coverage numbers
+  - Add link to US1 documentation
+
+**Checkpoint**: At this point, User Story 1 should be fully functional, tested, AND documented
 
 ---
 
@@ -117,7 +129,12 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
 - [ ] T023 [US2] Integrate with User Story 1 components (if needed)
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+### Documentation for User Story 2
+
+- [ ] T024 [P] [Simple] [US2] Document US2 features in docs/user-guide.md
+- [ ] T025 [P] [Simple] [US2] Update README.md for US2 completion
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently and be documented
 
 ---
 
@@ -133,7 +150,12 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
 
 ### Implementation for User Story 3
+### Documentation for User Story 3
 
+- [ ] T029 [P] [Simple] [US3] Document US3 features in docs/user-guide.md
+- [ ] T030 [P] [Simple] [US3] Update README.md for US3 completion
+
+**Checkpoint**: All user stories should now be independently functional and documented
 - [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
 - [ ] T027 [US3] Implement [Service] in src/services/[service].py
 - [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
@@ -145,7 +167,9 @@ Examples of foundational tasks (adjust based on your project):
 [Add more user story phases as needed, following the same pattern]
 
 ---
-
+Polish and finalize docs/user-guide.md (consolidate incremental sections)
+- [ ] TXXX [P] Polish and finalize docs/developer-guide.md (add final details)
+- [ ] TXXX [Simple] Final README.md polish (screenshots, FAQ, troubleshooting)
 ## Phase N: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
