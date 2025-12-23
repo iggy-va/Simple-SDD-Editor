@@ -116,12 +116,12 @@
 - [x] T054 [Simple] [US2] Load SpeckitProject and populate navigator on project open in src/gui/main_window.py
 - [x] T055 [P] [Complex] [US2] Implement project refresh action in src/gui/navigator.py (detect external file changes)
 - [x] T056 [Simple] [US2] Add visual indicators for file change status in navigator in src/gui/navigator.py (badges per FR-009)
-- [ ] T057 [P] [Architecture] [US2] Implement search functionality in src/gui/main_window.py (Ctrl+F, search panel)
-- [ ] T058 [P] [Architecture] [US2] Implement DocumentIndex in src/core/indexer.py (in-memory inverted index with SQLite persistence)
-- [ ] T059 [Simple] [US2] Implement search with scope selection in src/gui/main_window.py (current/open/all documents per FR-020)
-- [ ] T060 [Complex] [US2] Support regex and case-sensitive search options in src/core/indexer.py
-- [ ] T061 [Simple] [US2] Display search results with line numbers and context in src/gui/main_window.py
-- [ ] T062 [Complex] [US2] Implement progressive indexing in background thread in src/core/indexer.py
+- [x] T057 [P] [Architecture] [US2] Implement search functionality in src/gui/main_window.py (Ctrl+F, search panel)
+- [x] T058 [P] [Architecture] [US2] Implement DocumentIndex in src/core/indexer.py (in-memory inverted index with SQLite persistence)
+- [x] T059 [Simple] [US2] Implement search with scope selection in src/gui/main_window.py (current/open/all documents per FR-020)
+- [x] T060 [Complex] [US2] Support regex and case-sensitive search options in src/core/indexer.py
+- [x] T061 [Simple] [US2] Display search results with line numbers and context in src/gui/main_window.py
+- [x] T062 [Complex] [US2] Implement progressive indexing in background thread in src/core/indexer.py
 - [ ] T063 [P] [Complex] [US2] Implement drag-and-drop for allowed operations in src/gui/navigator.py (documents between folders, files to tabs, external files import per FR-027)
 - [ ] T064 [Simple] [US2] Add visual drop target highlighting and forbidden cursor in src/gui/navigator.py
 - [ ] T065 [P] [Simple] [US2] Implement context menu for file operations in src/gui/navigator.py (rename, delete with confirmation, duplicate, copy path, reveal in explorer, open external per FR-028)

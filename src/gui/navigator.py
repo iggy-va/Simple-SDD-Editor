@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Signal, QFileSystemWatcher
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QTreeView
 
@@ -21,6 +21,7 @@ class ProjectTreeNode:
         self.parent = parent
         self.children: list[ProjectTreeNode] = []
         self._loaded = False
+        self.change_status: str = ""  # "", "modified", "added", "deleted"
     
     def load_children(self) -> None:
         """Lazy load children for this node"""
@@ -219,12 +220,23 @@ class LazyProjectModel(QAbstractItemModel):
 class ProjectNavigator(QTreeView):
     """Tree view widget for navigating Speckit projects"""
     
+    # Signal emitted when file changes are detected
+    fileChanged = Signal(str)  # path to changed file
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         
         self.project: Optional[SpeckitProject] = None
         self.model = LazyProjectModel()
         self.setModel(self.model)
+        
+        # File system watcher for external changes
+        self.file_watcher = QFileSystemWatcher(self)
+        self.file_watcher.directoryChanged.connect(self._on_directory_changed)
+        self.file_watcher.fileChanged.connect(self._on_file_changed)
+        
+        # Track watched directories
+        self._watched_dirs: set[str] = set()
         
         # Configure tree view
         self.setHeaderHidden(True)  # Hide header for single column
@@ -243,12 +255,90 @@ class ProjectNavigator(QTreeView):
         self.project = project
         self.model.set_project(project)
         
+        # Set up file watching for project directory
+        self._setup_file_watching()
+        
         # Expand root level
         root_index = self.model.index(0, 0)
         if root_index.isValid():
             self.expand(root_index)
         
         logger.info(f"Navigator displaying project: {project.name}")
+    
+    def refresh(self) -> None:
+        """Refresh the project tree (reload from disk)"""
+        if not self.project:
+            return
+        
+        logger.info("Refreshing project navigator")
+        
+        # Reset model
+        self.model.beginResetModel()
+        
+        # Reload project structure
+        if self.project.root_path.exists():
+            self.model.root_node = ProjectTreeNode(self.project.root_path)
+        
+        self.model.endResetModel()
+        
+        # Re-expand root
+        root_index = self.model.index(0, 0)
+        if root_index.isValid():
+            self.expand(root_index)
+        
+        logger.info("Project navigator refreshed")
+    
+    def _setup_file_watching(self) -> None:
+        """Set up filesystem watching for the project"""
+        if not self.project:
+            return
+        
+        # Clear existing watches
+        if self._watched_dirs:
+            self.file_watcher.removePaths(list(self._watched_dirs))
+            self._watched_dirs.clear()
+        
+        # Watch project root and key subdirectories
+        project_root = str(self.project.root_path)
+        
+        dirs_to_watch = [project_root]
+        
+        # Add specs directory if exists
+        specs_dir = self.project.root_path / 'specs'
+        if specs_dir.exists():
+            dirs_to_watch.append(str(specs_dir))
+            
+            # Watch individual spec folders (001-feature-name, etc.)
+            for spec_folder in specs_dir.iterdir():
+                if spec_folder.is_dir() and not spec_folder.name.startswith('.'):
+                    dirs_to_watch.append(str(spec_folder))
+        
+        # Add .specify directory if exists
+        specify_dir = self.project.root_path / '.specify'
+        if specify_dir.exists():
+            dirs_to_watch.append(str(specify_dir))
+        
+        # Add templates directory if exists
+        templates_dir = self.project.root_path / '.specify' / 'templates'
+        if templates_dir.exists():
+            dirs_to_watch.append(str(templates_dir))
+        
+        # Add to watcher
+        added = self.file_watcher.addPaths(dirs_to_watch)
+        self._watched_dirs = set(added)
+        
+        logger.debug(f"Watching {len(self._watched_dirs)} directories for changes")
+    
+    def _on_directory_changed(self, path: str) -> None:
+        """Handle directory change notification"""
+        logger.info(f"Directory changed: {path}")
+        # Auto-refresh on directory changes
+        self.refresh()
+    
+    def _on_file_changed(self, path: str) -> None:
+        """Handle file change notification"""
+        logger.info(f"File changed: {path}")
+        self.fileChanged.emit(path)
     
     def _on_item_clicked(self, index: QModelIndex) -> None:
         """Handle single click on item"""

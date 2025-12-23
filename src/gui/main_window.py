@@ -22,6 +22,7 @@ from ..core import SpeckitDocument, SpeckitProject
 from ..utils.logging import get_logger
 from .editor import SpeckitEditorWidget
 from .navigator import ProjectNavigator
+from .search_panel import SearchPanel
 from .template_dialog import TemplateDialog
 
 logger = get_logger(__name__)
@@ -169,6 +170,15 @@ class MainWindow(QMainWindow):
         toggle_explorer_action.setStatusTip("Toggle project explorer panel")
         view_menu.addAction(toggle_explorer_action)
         
+        view_menu.addSeparator()
+        
+        # Refresh Project
+        refresh_action = QAction("&Refresh Project", self)
+        refresh_action.setShortcut(QKeySequence("F5"))
+        refresh_action.setStatusTip("Refresh project tree from disk")
+        refresh_action.triggered.connect(self._on_refresh_project)
+        view_menu.addAction(refresh_action)
+        
         # Help menu
         help_menu = menubar.addMenu("&Help")
         
@@ -202,15 +212,19 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout(central_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Splitter for navigator and editor area
+        # Main horizontal splitter for navigator and editor+search area
         self.splitter = QSplitter(Qt.Horizontal)
         
         # Project navigator (left panel)
         self.navigator = ProjectNavigator()
         self.navigator.doubleClicked.connect(self._on_navigator_file_double_clicked)
+        self.navigator.fileChanged.connect(self._on_external_file_changed)
         self.splitter.addWidget(self.navigator)
         
-        # Tab widget for open documents (right panel)
+        # Right side: vertical splitter for tabs and search
+        right_splitter = QSplitter(Qt.Vertical)
+        
+        # Tab widget for open documents (top right)
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.setMovable(True)
@@ -221,9 +235,20 @@ class MainWindow(QMainWindow):
         self.tab_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tab_widget.customContextMenuRequested.connect(self._show_tab_context_menu)
         
-        self.splitter.addWidget(self.tab_widget)
+        right_splitter.addWidget(self.tab_widget)
         
-        # Set splitter sizes (20% navigator, 80% editor)
+        # Search panel (bottom right, initially hidden)
+        self.search_panel = SearchPanel()
+        self.search_panel.resultSelected.connect(self._on_search_result_selected)
+        self.search_panel.setVisible(False)  # Hidden by default
+        right_splitter.addWidget(self.search_panel)
+        
+        # Set vertical splitter sizes (80% tabs, 20% search when visible)
+        right_splitter.setSizes([800, 200])
+        
+        self.splitter.addWidget(right_splitter)
+        
+        # Set main splitter sizes (20% navigator, 80% editor area)
         self.splitter.setSizes([200, 800])
         
         layout.addWidget(self.splitter)
@@ -418,6 +443,9 @@ class MainWindow(QMainWindow):
             # Populate project navigator
             self.navigator.set_project(self.project)
             
+            # Set project for search panel
+            self.search_panel.set_project(self.project)
+            
             logger.info(f"Project loaded successfully: {self.project.name}")
         except Exception as e:
             logger.error(f"Failed to load project: {e}")
@@ -500,9 +528,83 @@ class MainWindow(QMainWindow):
         # TODO: Implement in Phase 3 (US1)
     
     def _on_find(self) -> None:
-        """Handle Find action"""
+        """Handle Find action (Ctrl+F)"""
         logger.debug("Find requested")
-        # TODO: Implement in Phase 3 (US1)
+        
+        # Toggle search panel visibility
+        self.search_panel.setVisible(not self.search_panel.isVisible())
+        
+        if self.search_panel.isVisible():
+            # Focus on search input
+            self.search_panel.search_input.setFocus()
+            self.search_panel.search_input.selectAll()
+            
+            logger.info("Search panel shown")
+        else:
+            logger.info("Search panel hidden")
+    
+    def _on_refresh_project(self) -> None:
+        """Handle project refresh action (F5)"""
+        if not self.project:
+            logger.debug("No project to refresh")
+            return
+        
+        logger.info("Refreshing project from disk")
+        
+        # Refresh navigator tree
+        self.navigator.refresh()
+        
+        # Show status message
+        self.statusBar().showMessage("Project refreshed", 3000)
+    
+    def _on_external_file_changed(self, file_path: str) -> None:
+        """Handle external file change notification"""
+        changed_path = Path(file_path)
+        
+        # Check if the changed file is currently open
+        if changed_path in self.open_editors:
+            editor = self.open_editors[changed_path]
+            
+            # Check if editor has unsaved changes
+            if editor.is_modified():
+                # File changed externally but editor has unsaved changes
+                # Ask user what to do
+                reply = QMessageBox.question(
+                    self,
+                    "External File Change",
+                    f"{changed_path.name} has been modified externally and has unsaved changes.\n\n"
+                    "Do you want to reload from disk? (Unsaved changes will be lost)",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                
+                if reply == QMessageBox.No:
+                    return
+            else:
+                # File changed externally with no local changes
+                # Ask to reload
+                reply = QMessageBox.question(
+                    self,
+                    "External File Change",
+                    f"{changed_path.name} has been modified externally.\n\nReload from disk?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                
+                if reply == QMessageBox.No:
+                    return
+            
+            # Reload the file
+            try:
+                doc = self.project.get_document(changed_path)
+                editor.load_document(doc)
+                logger.info(f"Reloaded {changed_path} from disk")
+                self.statusBar().showMessage(f"Reloaded {changed_path.name}", 3000)
+            except Exception as e:
+                logger.error(f"Failed to reload {changed_path}: {e}")
+                QMessageBox.critical(
+                    self,
+                    "Reload Failed",
+                    f"Failed to reload {changed_path.name}:\n{e}"
+                )
     
     def _on_about(self) -> None:
         """Handle About action"""
@@ -616,6 +718,38 @@ class MainWindow(QMainWindow):
         """Close all tabs"""
         while self.tab_widget.count() > 0:
             self._on_tab_close_requested(0)
+    
+    def _on_search_result_selected(self, file_path: Path, line_number: int) -> None:
+        """Handle search result selection - open file and go to line"""
+        logger.info(f"Opening search result: {file_path}:{line_number}")
+        
+        if not self.project:
+            return
+        
+        try:
+            # Load document
+            doc = self.project.get_document(file_path)
+            
+            # Open in editor
+            self._open_document_in_editor(doc)
+            
+            # Get the editor widget
+            current_widget = self.tab_widget.currentWidget()
+            if isinstance(current_widget, SpeckitEditorWidget):
+                # Move cursor to line
+                cursor = current_widget.textCursor()
+                cursor.movePosition(cursor.Start)
+                for _ in range(line_number - 1):
+                    cursor.movePosition(cursor.Down)
+                current_widget.setTextCursor(cursor)
+                
+                # Ensure line is visible
+                current_widget.ensureCursorVisible()
+                
+                logger.debug(f"Navigated to line {line_number}")
+        
+        except Exception as e:
+            logger.error(f"Failed to open search result: {e}")
     
     def _open_document_in_editor(self, document: SpeckitDocument) -> None:
         """Open a document in a new editor tab"""
