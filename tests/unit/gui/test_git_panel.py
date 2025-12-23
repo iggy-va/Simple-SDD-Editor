@@ -34,13 +34,13 @@ class TestGitPanelInitialization:
         qtbot.addWidget(panel)
         
         # Should have status display
-        assert hasattr(panel, 'status_list')
+        assert hasattr(panel, 'file_list')
         
         # Should have action buttons
-        assert hasattr(panel, 'commit_btn')
-        assert hasattr(panel, 'pull_btn')
-        assert hasattr(panel, 'push_btn')
-        assert hasattr(panel, 'refresh_btn')
+        assert hasattr(panel, 'commit_button')
+        assert hasattr(panel, 'pull_button')
+        assert hasattr(panel, 'push_button')
+        assert hasattr(panel, 'refresh_button')
 
 
 class TestGitStatus:
@@ -48,8 +48,8 @@ class TestGitStatus:
     
     def test_status_updates_with_changes(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that status list updates when files change"""
-        # Create git repo
-        repo_path = tmp_path / "test_repo"
+        # Use git_project fixture
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True)
@@ -76,7 +76,7 @@ class TestGitStatus:
     
     def test_status_shows_untracked_files(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that untracked files appear in status"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         
@@ -106,7 +106,7 @@ class TestCommitWorkflow:
     
     def test_commit_dialog_opens(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that clicking commit opens dialog"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True)
@@ -154,7 +154,7 @@ class TestGitOperations:
     
     def test_refresh_updates_status(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that refresh button updates status display"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         
@@ -190,7 +190,7 @@ class TestDiffViewer:
     
     def test_double_click_shows_diff(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that double-clicking a file shows diff"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         
@@ -231,7 +231,7 @@ class TestBranchOperations:
     
     def test_current_branch_displays(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that current branch is displayed"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         
@@ -259,7 +259,7 @@ class TestGitHistory:
     
     def test_history_shows_commits(self, qtbot: QtBot, git_project: SpeckitProject):
         """Test that commit history displays commits"""
-        repo_path = tmp_path / "test_repo"
+        repo_path = git_project.root_path
         repo_path.mkdir()
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True)

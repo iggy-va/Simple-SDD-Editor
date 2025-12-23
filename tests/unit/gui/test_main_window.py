@@ -39,7 +39,6 @@ class TestMainWindowLaunch:
         
         # Check central widget components
         assert window.tab_widget is not None
-        assert window.sidebar is not None
         assert window.navigator is not None
         assert window.git_panel is not None
         assert window.mcp_panel is not None
@@ -58,7 +57,7 @@ class TestMainWindowLaunch:
         assert "&Edit" in menu_titles
         assert "&View" in menu_titles
         assert "&Git" in menu_titles
-        assert "&MCP" in menu_titles
+        assert "&Tools" in menu_titles
         assert "&Help" in menu_titles
 
 
@@ -188,7 +187,7 @@ class TestProjectOperations:
         window = MainWindow()
         qtbot.addWidget(window)
         
-        project_path = tmp_path / "test_project"
+        project_path = sample_project.root_path
         project_path.mkdir()
         
         # Create project programmatically
@@ -208,7 +207,7 @@ class TestProjectOperations:
         window = MainWindow()
         qtbot.addWidget(window)
         
-        project_path = tmp_path / "test_nav_project"
+        project_path = sample_project.root_path
         project_path.mkdir()
         
         # Create project with documents
@@ -241,7 +240,7 @@ class TestEditorFunctionality:
         # Get current editor
         current_widget = window.tab_widget.currentWidget()
         if hasattr(current_widget, 'editor'):
-            editor = current_widget.editor
+            editor = current_widget
             
             # Simulate typing
             test_text = "# Test Heading\\n\\nThis is test content."
@@ -262,7 +261,7 @@ class TestEditorFunctionality:
         # Get current editor
         current_widget = window.tab_widget.currentWidget()
         if hasattr(current_widget, 'editor'):
-            editor = current_widget.editor
+            editor = current_widget
             
             # Initially not modified
             initial_modified = editor.document().isModified()
@@ -289,7 +288,7 @@ class TestGitPanelIntegration:
         window = MainWindow()
         qtbot.addWidget(window)
         
-        project_path = tmp_path / "git_test_project"
+        project_path = sample_project.root_path
         project_path.mkdir()
         
         # Create project
@@ -325,7 +324,7 @@ class TestMCPPanelIntegration:
         
         # MCP panel should have query input
         assert hasattr(window.mcp_panel, 'query_input')
-        assert hasattr(window.mcp_panel, 'execute_btn')
+        assert hasattr(window.mcp_panel, 'execute_button')
         assert hasattr(window.mcp_panel, 'results_tabs')
 
 

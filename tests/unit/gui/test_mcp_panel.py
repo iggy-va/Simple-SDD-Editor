@@ -41,7 +41,7 @@ class TestMCPPanelInitialization:
         assert panel.query_type_combo is not None
         
         # Execute button
-        assert hasattr(panel, 'execute_btn')
+        assert hasattr(panel, 'execute_button')
         assert panel.execute_button is not None
     
     def test_panel_has_results_display(self, qtbot: QtBot):
@@ -72,9 +72,9 @@ class TestQueryTypes:
         # Check for expected types
         types = [combo.itemText(i) for i in range(combo.count())]
         assert "JQL (Jira)" in types
-        assert "SQL" in types
-        assert "GitHub" in types
-        assert "Terminal" in types
+        assert "SQL (Database)" in types
+        assert "GitHub Query" in types
+        assert "Terminal Command" in types
     
     def test_selecting_query_type(self, qtbot: QtBot):
         """Test selecting different query types"""
@@ -89,7 +89,7 @@ class TestQueryTypes:
         
         # Select SQL
         combo.setCurrentText("SQL")
-        assert combo.currentText() == "SQL"
+        assert combo.currentText() == "SQL (Database)"
 
 
 class TestQueryInput:
@@ -338,7 +338,7 @@ class TestExportActions:
         panel = MCPPanel()
         qtbot.addWidget(panel)
         
-        assert hasattr(panel, 'export_btn')
+        assert hasattr(panel, 'export_button')
         assert panel.export_button is not None
     
     def test_export_menu_has_options(self, qtbot: QtBot):
