@@ -434,14 +434,43 @@ def test_syntax_highlighting(qtbot):
 
 ## Build and Packaging
 
+### Prerequisites
+
+**Required**:
+- **Python 3.11 or 3.12** (⚠️ Python 3.14 has PyInstaller compatibility issues)
+- PyInstaller 6.x: `pip install pyinstaller`
+- Platform-specific tools:
+  - Windows: Visual Studio Build Tools (for some dependencies)
+  - macOS: Xcode Command Line Tools
+  - Linux: Standard build tools (gcc, make)
+
 ### Development Builds
 
 ```bash
 # Run from source (development)
 python main.py
+
+# Run with debug logging
+python main.py --debug
 ```
 
-### Production Builds (PyInstaller)
+### Production Builds
+
+The project includes a pre-configured PyInstaller spec file (`speckit-editor.spec`) with optimized settings.
+
+**Build using spec file** (recommended):
+```bash
+python -m PyInstaller speckit-editor.spec
+```
+
+This handles:
+- Platform-specific executable formats (.exe, .app, binary)
+- Template and asset bundling
+- Hidden imports for PySide6, sqlite3
+- Module exclusions (tkinter, matplotlib, etc.)
+- UPX compression for smaller binaries
+
+**Manual PyInstaller commands** (alternative):
 
 **Windows**:
 ```bash
@@ -450,6 +479,8 @@ pyinstaller --name="Speckit Editor" \
             --onefile \
             --icon=assets/icon.ico \
             --add-data=".specify;.specify" \
+            --hidden-import=PySide6.QtCore \
+            --hidden-import=PySide6.QtWidgets \
             main.py
 ```
 
@@ -460,6 +491,8 @@ pyinstaller --name="Speckit Editor" \
             --onefile \
             --icon=assets/icon.icns \
             --add-data=".specify:.specify" \
+            --hidden-import=PySide6.QtCore \
+            --hidden-import=PySide6.QtWidgets \
             main.py
 ```
 
@@ -468,15 +501,75 @@ pyinstaller --name="Speckit Editor" \
 pyinstaller --name="speckit-editor" \
             --onefile \
             --add-data=".specify:.specify" \
+            --hidden-import=PySide6.QtCore \
+            --hidden-import=PySide6.QtWidgets \
             main.py
 ```
+
+### Size Optimization
+
+**UPX Compression** (enabled in spec file):
+- Reduces binary size by 50-70%
+- Install UPX: https://upx.github.io/
+- PyInstaller auto-detects and uses UPX if available
+
+**Module Exclusions** (already configured):
+- Excluded: tkinter, matplotlib, numpy, pandas, IPython, jupyter
+- Saves ~100MB in final binary
+
+### Code Signing
+
+**Windows**:
+```powershell
+# Sign executable with certificate
+signtool sign /f certificate.pfx /p password /tr http://timestamp.digicert.com "dist/Speckit Editor.exe"
+```
+
+**macOS**:
+```bash
+# Sign application bundle
+codesign --deep --force --verify --verbose --sign "Developer ID Application: Your Name" "dist/Speckit Editor.app"
+
+# Notarize for Gatekeeper
+xcrun notarytool submit "Speckit Editor.dmg" --apple-id your@email.com --password app-specific-password --wait
+```
+
+**Linux**:
+```bash
+# GPG signing (optional, recommended for distribution)
+gpg --detach-sign --armor dist/speckit-editor
+```
+
+### Known Issues
+
+**Python 3.14 Incompatibility**:
+- **Issue**: PyInstaller 6.x + Python 3.14 + keyring module causes build failure
+- **Error**: `ValueError: Target module 'distutils' already imported as ExcludedModule`
+- **Workaround**: Use Python 3.11 or 3.12 for packaging
+- **Status**: PyInstaller team aware, fix pending
+
+### Testing Packaged Builds
+
+**Smoke test checklist**:
+1. Application launches without errors
+2. Main window displays correctly
+3. Can create new document
+4. Can save and load files
+5. Git integration works (commit, push, pull)
+6. MCP panel accessible
+7. Settings persist across restarts
+
+**Full validation**:
+- Run all test scenarios from `TEST_REPORT.md`
+- Validate all 12 success criteria
+- Test on clean system (no Python installed)
 
 ### Distribution
 
 Executables are generated in `dist/`:
-- Windows: `Speckit Editor.exe`
-- macOS: `Speckit Editor.app`
-- Linux: `speckit-editor`
+- **Windows**: `Speckit Editor.exe` (~25MB with UPX)
+- **macOS**: `Speckit Editor.app` (~30MB with UPX)
+- **Linux**: `speckit-editor` (~28MB with UPX)
 
 ---
 
