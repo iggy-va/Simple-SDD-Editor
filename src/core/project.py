@@ -71,6 +71,157 @@ class GitStatus:
 class SpeckitProject:
     """Root aggregate for a Speckit project"""
     
+    @staticmethod
+    def create_new(root_path: Path, project_name: str, initialize_git: bool = True) -> "SpeckitProject":
+        """Create a new Speckit project with proper structure
+        
+        Args:
+            root_path: Parent directory where project will be created
+            project_name: Name of the project (becomes folder name)
+            initialize_git: Whether to initialize git repository
+            
+        Returns:
+            SpeckitProject instance
+            
+        Raises:
+            FileExistsError: If project directory already exists
+            PermissionError: If cannot create directories
+        """
+        project_path = root_path / project_name
+        
+        if project_path.exists():
+            raise FileExistsError(f"Directory already exists: {project_path}")
+        
+        logger.info(f"Creating new project: {project_path}")
+        
+        # Create project structure
+        project_path.mkdir(parents=True, exist_ok=False)
+        specify_dir = project_path / ".specify"
+        specify_dir.mkdir()
+        
+        # Create subdirectories
+        templates_dir = specify_dir / "templates"
+        templates_dir.mkdir()
+        (specify_dir / "memory").mkdir()
+        (specify_dir / "scripts").mkdir()
+        (project_path / "specs").mkdir()
+        
+        # Create default templates
+        (templates_dir / "spec-template.md").write_text("""# [FEATURE_ID] - [FEATURE_NAME]
+
+## Overview
+Brief description of the feature.
+
+## User Stories
+- As a [user type], I want [goal] so that [benefit]
+
+## Requirements
+### Functional Requirements
+- FR-001: Description
+
+### Non-Functional Requirements
+- NFR-001: Description
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+## Technical Notes
+Implementation considerations.
+""", encoding="utf-8")
+        
+        (templates_dir / "plan-template.md").write_text("""# Implementation Plan: [FEATURE_NAME]
+
+## Technology Stack
+- Language: 
+- Framework: 
+- Libraries: 
+
+## Architecture
+Describe the high-level architecture.
+
+## Project Structure
+```
+project/
+├── src/
+└── tests/
+```
+
+## Dependencies
+- Dependency 1
+- Dependency 2
+
+## Development Phases
+1. Phase 1: Setup
+2. Phase 2: Core implementation
+3. Phase 3: Testing
+""", encoding="utf-8")
+        
+        (templates_dir / "tasks-template.md").write_text("""# Tasks: [FEATURE_NAME]
+
+## Phase 1: Setup
+- [ ] T001 Create project structure
+- [ ] T002 Setup dependencies
+
+## Phase 2: Implementation
+- [ ] T003 Implement core feature
+- [ ] T004 Add tests
+
+## Phase 3: Testing & Documentation
+- [ ] T005 Integration testing
+- [ ] T006 Documentation
+""", encoding="utf-8")
+        
+        # Create initial constitution
+        constitution = specify_dir / "memory" / "constitution.md"
+        constitution.write_text(f"""# {project_name} - Project Constitution
+
+## Purpose
+Define the purpose and principles of this project here.
+
+## Core Principles
+1. Principle 1
+2. Principle 2
+3. Principle 3
+
+## Technical Decisions
+- Decision 1
+- Decision 2
+""", encoding="utf-8")
+        
+        # Create README
+        readme = project_path / "README.md"
+        readme.write_text(f"""# {project_name}
+
+Created with Speckit Editor on {datetime.now().strftime('%Y-%m-%d')}
+
+## Project Structure
+- `specs/` - Feature specifications
+- `.specify/templates/` - Document templates
+- `.specify/memory/` - Project memory and constitution
+- `.specify/scripts/` - Automation scripts
+""", encoding="utf-8")
+        
+        # Initialize git if requested
+        if initialize_git:
+            import subprocess
+            try:
+                subprocess.run(["git", "init"], cwd=project_path, check=True, capture_output=True)
+                subprocess.run(["git", "config", "user.name", "Speckit User"], cwd=project_path, check=False, capture_output=True)
+                subprocess.run(["git", "config", "user.email", "user@speckit.local"], cwd=project_path, check=False, capture_output=True)
+                
+                # Initial commit
+                subprocess.run(["git", "add", "."], cwd=project_path, check=True, capture_output=True)
+                subprocess.run(["git", "commit", "-m", "Initial commit - Project created"], cwd=project_path, check=True, capture_output=True)
+                logger.info("Git repository initialized")
+            except subprocess.CalledProcessError as e:
+                logger.warning(f"Could not initialize git: {e}")
+            except FileNotFoundError:
+                logger.warning("Git not found - skipping git initialization")
+        
+        logger.info(f"Project created successfully: {project_path}")
+        return SpeckitProject(root_path=project_path)
+    
     def __init__(self, root_path: Path):
         self.root_path = root_path
         self.name = root_path.name

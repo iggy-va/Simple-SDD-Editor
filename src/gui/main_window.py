@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -576,6 +577,11 @@ class MainWindow(QMainWindow):
         stylesheet = """
         QMainWindow {
             background-color: #ffffff;
+            color: #000000;
+        }
+        
+        QWidget {
+            color: #000000;
         }
         
         QTabWidget::pane {
@@ -585,6 +591,7 @@ class MainWindow(QMainWindow):
         
         QTabBar::tab {
             background-color: #f0f0f0;
+            color: #000000;
             border: 1px solid #cccccc;
             border-bottom: none;
             padding: 6px 12px;
@@ -593,11 +600,28 @@ class MainWindow(QMainWindow):
         
         QTabBar::tab:selected {
             background-color: #ffffff;
+            color: #000000;
             border-bottom: 1px solid #ffffff;
         }
         
         QTabBar::tab:hover {
             background-color: #e0e0e0;
+        }
+        
+        QTextEdit, QPlainTextEdit {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #cccccc;
+        }
+        
+        QTreeView {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #cccccc;
+        }
+        
+        QLabel {
+            color: #000000;
         }
         
         /* Focus indicators for accessibility */
@@ -608,16 +632,44 @@ class MainWindow(QMainWindow):
         
         QMenuBar {
             background-color: #f0f0f0;
+            color: #000000;
             border-bottom: 1px solid #cccccc;
+        }
+        
+        QMenuBar::item {
+            color: #000000;
         }
         
         QMenuBar::item:selected {
             background-color: #e0e0e0;
         }
         
+        QMenu {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #cccccc;
+        }
+        
+        QMenu::item:selected {
+            background-color: #0078d4;
+            color: #ffffff;
+        }
+        
         QStatusBar {
             background-color: #f0f0f0;
+            color: #000000;
             border-top: 1px solid #cccccc;
+        }
+        
+        QPushButton {
+            color: #000000;
+        }
+        
+        QLineEdit {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #cccccc;
+            padding: 4px;
         }
         """
         
@@ -627,12 +679,53 @@ class MainWindow(QMainWindow):
     
     def _on_new_project(self) -> None:
         """Handle New Project action"""
+        from .new_project_dialog import NewProjectDialog
+        from ..core.project import SpeckitProject
+        
         logger.info("New Project requested")
-        QMessageBox.information(
-            self,
-            "Not Implemented",
-            "New Project feature will be implemented in Phase 4 (US2)"
-        )
+        
+        dialog = NewProjectDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            project_path, project_name, initialize_git = dialog.get_project_info()
+            
+            try:
+                # Create project
+                logger.info(f"Creating project: {project_name} at {project_path}")
+                project = SpeckitProject.create_new(
+                    root_path=project_path,
+                    project_name=project_name,
+                    initialize_git=initialize_git
+                )
+                
+                # Load the new project
+                self._load_project(project.root_path)
+                
+                QMessageBox.information(
+                    self,
+                    "Project Created",
+                    f"Project '{project_name}' created successfully!"
+                )
+                
+            except FileExistsError as e:
+                QMessageBox.critical(
+                    self,
+                    "Creation Failed",
+                    f"Directory already exists:\n{e}"
+                )
+            except PermissionError as e:
+                QMessageBox.critical(
+                    self,
+                    "Permission Denied",
+                    f"Cannot create project:\n{e}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to create project: {e}")
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to create project:\n{e}"
+                )
+
     
     def _on_new_document(self) -> None:
         """Handle New Document from Template action"""
@@ -737,7 +830,7 @@ class MainWindow(QMainWindow):
             self._check_project_performance()
             
             # Load project settings
-            settings_path = self.project.root / ".specify" / "settings.json"
+            settings_path = self.project.root_path / ".specify" / "settings.json"
             self.project_settings = ProjectSettings.load(settings_path)
             
             # Apply settings
@@ -779,7 +872,7 @@ class MainWindow(QMainWindow):
         total_files = 0
         large_files = []
         
-        for file_path in self.project.root.rglob("*"):
+        for file_path in self.project.root_path.rglob("*"):
             if file_path.is_file() and not any(
                 part.startswith(".") for part in file_path.parts
             ):
@@ -1190,7 +1283,7 @@ class MainWindow(QMainWindow):
         try:
             from ..core.template import TemplateManager
             
-            templates_dir = self.project.root / ".specify" / "templates"
+            templates_dir = self.project.root_path / ".specify" / "templates"
             if not templates_dir.exists():
                 return
             
@@ -1605,7 +1698,7 @@ class MainWindow(QMainWindow):
             
             # Save project settings if project is loaded
             if self.project and self.project_settings:
-                settings_path = self.project.root / ".specify" / "settings.json"
+                settings_path = self.project.root_path / ".specify" / "settings.json"
                 self.project_settings.save(settings_path)
             
             # Apply new settings
@@ -1646,7 +1739,7 @@ class MainWindow(QMainWindow):
         
         # Build focus indicator style based on settings
         focus_style = ""
-        if self.project_settings.focus_indicators:
+        if self.project_settings.focus_indicators_enabled:
             focus_style = """
             /* Enhanced focus indicators for accessibility */
             *:focus {
@@ -1694,7 +1787,7 @@ class MainWindow(QMainWindow):
         # Add new focus indicator styles
         self.setStyleSheet(current_style + focus_style)
         
-        logger.info(f"Accessibility settings applied: focus_indicators={self.project_settings.focus_indicators}")
+        logger.info(f"Accessibility settings applied: focus_indicators={self.project_settings.focus_indicators_enabled}")
     
     def _on_manage_templates(self) -> None:
         """Open template manager dialog"""
@@ -1706,7 +1799,7 @@ class MainWindow(QMainWindow):
             )
             return
         
-        templates_dir = self.project.root / ".specify" / "templates"
+        templates_dir = self.project.root_path / ".specify" / "templates"
         
         # Create and show template manager dialog
         dialog = TemplateManagerWidget(templates_dir, parent=self)
@@ -1715,7 +1808,7 @@ class MainWindow(QMainWindow):
     
     def keyPressEvent(self, event) -> None:
         """Handle keyboard navigation"""
-        if not self.project_settings or not self.project_settings.keyboard_navigation:
+        if not self.project_settings or not self.project_settings.keyboard_navigation_enabled:
             super().keyPressEvent(event)
             return
         
